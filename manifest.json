@@ -1,0 +1,11 @@
+{
+    "name": "APR Gigante Cálculo de Obra",
+    "short_name": "APR Cálculo",
+    "description": "Calculadora simples para construção civil.",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#f2f4f7",
+    "theme_color": "#1565c0",
+    "orientation": "portrait",
+    "icons": []
+}

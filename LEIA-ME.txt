@@ -1,0 +1,16 @@
+APR GIGANTE - CALCULADORA DE OBRAS
+
+Esta versão aplica a nova tela inicial visual do APR Gigante.
+
+Substitua no seu projeto:
+- index.html
+- app.js
+
+Copie também a pasta:
+- images/
+
+A pasta images desta versão contém as imagens dos cards e a marca APR Gigante usada no novo cabeçalho.
+
+Mantenha os demais arquivos do seu projeto, como style.css, manifest.json e sw.js.
+
+Os módulos de cálculo foram preservados e os cards da nova tela apontam para as funções existentes.

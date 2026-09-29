@@ -1,0 +1,681 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f2f4f7;
+    color: #222;
+    min-height: 100vh;
+}
+
+
+/* =========================================================
+   CABEÇALHO
+   ========================================================= */
+
+.cabecalho {
+    background: #1565c0;
+    color: white;
+
+    min-height: 110px;
+
+    padding: 10px 20px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 18px;
+
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.logo {
+    width: 95px;
+    height: 95px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo img {
+    width: 95px;
+    height: 95px;
+
+    object-fit: contain;
+}
+
+.titulo-header h1 {
+    font-size: 30px;
+    margin-bottom: 4px;
+}
+
+.titulo-header p {
+    font-size: 18px;
+}
+
+
+/* =========================================================
+   TELAS
+   ========================================================= */
+
+.tela {
+    width: 100%;
+    max-width: 1100px;
+
+    margin: 0 auto;
+
+    padding: 25px 18px 40px;
+}
+
+.tela-calculo {
+    max-width: 900px;
+}
+
+#alvenaria,
+#chapisco,
+#emboco,
+#contrapiso {
+    display: none;
+}
+
+
+/* =========================================================
+   INÍCIO
+   ========================================================= */
+
+.intro {
+    text-align: center;
+
+    margin-bottom: 25px;
+}
+
+.intro h2 {
+    color: #1565c0;
+
+    margin-bottom: 8px;
+
+    font-size: 27px;
+}
+
+.intro p {
+    color: #555;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   SERVIÇOS
+   ========================================================= */
+
+.servicos {
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 18px;
+}
+
+.servico-card {
+    border: none;
+
+    background: white;
+
+    border-radius: 14px;
+
+    padding: 22px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 18px;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, 0.08);
+
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+.servico-card:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 5px 15px rgba(0, 0, 0, 0.12);
+}
+
+.icone-servico {
+    font-size: 42px;
+}
+
+.servico-card h3 {
+    color: #1565c0;
+
+    margin-bottom: 5px;
+
+    font-size: 20px;
+}
+
+.servico-card p {
+    color: #666;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   BOTÃO VOLTAR
+   ========================================================= */
+
+.botao-voltar {
+    border: none;
+
+    background: transparent;
+
+    color: #1565c0;
+
+    font-size: 17px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    margin-bottom: 12px;
+
+    padding: 5px 0;
+}
+
+
+/* =========================================================
+   CARTÃO DE CÁLCULO
+   ========================================================= */
+
+.cartao-calculo {
+    background: white;
+
+    border-radius: 16px;
+
+    padding: 25px;
+
+    box-shadow:
+        0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cartao-calculo > h2 {
+    color: #1565c0;
+
+    margin-bottom: 6px;
+
+    font-size: 27px;
+}
+
+.descricao-servico {
+    color: #666;
+
+    margin-bottom: 25px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   INFORMAÇÃO TÉCNICA
+   ========================================================= */
+
+.informacao-tecnica {
+    background: #e8f1ff;
+
+    border-left: 5px solid #1565c0;
+
+    padding: 13px 15px;
+
+    margin-bottom: 22px;
+
+    border-radius: 7px;
+}
+
+.informacao-tecnica strong {
+    color: #1565c0;
+}
+
+.informacao-tecnica p {
+    margin-top: 5px;
+
+    color: #444;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   SEÇÕES
+   ========================================================= */
+
+.secao-calculo {
+    margin-bottom: 25px;
+}
+
+.secao-calculo h3 {
+    font-size: 18px;
+
+    color: #333;
+
+    margin-bottom: 14px;
+
+    border-bottom: 1px solid #ddd;
+
+    padding-bottom: 8px;
+}
+
+
+/* =========================================================
+   FORMULÁRIOS
+   ========================================================= */
+
+.form-grid {
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 15px;
+}
+
+.campo {
+    display: flex;
+
+    flex-direction: column;
+}
+
+.campo label {
+    font-size: 14px;
+
+    font-weight: bold;
+
+    color: #444;
+
+    margin-bottom: 7px;
+}
+
+.campo input,
+.campo select {
+    width: 100%;
+
+    padding: 13px 12px;
+
+    border: 1px solid #ccc;
+
+    border-radius: 8px;
+
+    font-size: 16px;
+
+    outline: none;
+
+    background: white;
+}
+
+.campo input:focus,
+.campo select:focus {
+    border-color: #1565c0;
+
+    box-shadow:
+        0 0 0 2px rgba(21, 101, 192, 0.12);
+}
+
+
+/* =========================================================
+   BOTÃO CALCULAR
+   ========================================================= */
+
+.botao-calcular {
+    width: 100%;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #1565c0;
+
+    color: white;
+
+    padding: 15px;
+
+    font-size: 17px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: background 0.2s;
+}
+
+.botao-calcular:hover {
+    background: #0d47a1;
+}
+
+
+/* =========================================================
+   RESULTADOS
+   ========================================================= */
+
+.resultado {
+    margin-top: 25px;
+}
+
+.bloco-resultado {
+    background: #f8f9fa;
+
+    border: 1px solid #e0e0e0;
+
+    border-radius: 12px;
+
+    padding: 18px;
+
+    margin-bottom: 18px;
+}
+
+
+/* =========================================================
+   TÍTULO DOS RESULTADOS
+   ========================================================= */
+
+.titulo-resultado {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    margin-bottom: 15px;
+
+    color: #1565c0;
+}
+
+.titulo-resultado span {
+    font-size: 22px;
+}
+
+.titulo-resultado h3 {
+    font-size: 20px;
+}
+
+
+/* =========================================================
+   LINHAS
+   ========================================================= */
+
+.linha-resultado {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 15px;
+
+    padding: 10px 0;
+
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.linha-resultado:last-child {
+    border-bottom: none;
+}
+
+.linha-resultado span {
+    color: #555;
+}
+
+.linha-resultado strong {
+    color: #222;
+
+    text-align: right;
+}
+
+
+/* =========================================================
+   TOTAL
+   ========================================================= */
+
+.total-resultado {
+    margin-top: 15px;
+
+    background: #1565c0;
+
+    color: white;
+
+    border-radius: 9px;
+
+    padding: 15px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 15px;
+}
+
+.total-resultado span {
+    font-weight: bold;
+
+    font-size: 14px;
+}
+
+.total-resultado strong {
+    font-size: 22px;
+}
+
+
+/* =========================================================
+   FICHA TÉCNICA
+   ========================================================= */
+
+.ficha-tecnica {
+    background: #f1f7ff;
+
+    border-color: #c9def8;
+}
+
+.ficha-tecnica .titulo-resultado {
+    color: #1565c0;
+}
+
+.texto-ajuda {
+    color: #666;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+
+    margin-bottom: 10px;
+}
+
+
+/* =========================================================
+   COMPRA SUGERIDA
+   ========================================================= */
+
+.compra-sugerida {
+    background: #f8faf5;
+
+    border-color: #d6e2c9;
+}
+
+.compra-sugerida .titulo-resultado {
+    color: #38761d;
+}
+
+.item-compra {
+    background: white;
+
+    border: 1px solid #dce6d5;
+
+    border-radius: 8px;
+
+    padding: 12px;
+
+    margin-top: 9px;
+
+    font-weight: bold;
+
+    color: #333;
+}
+
+
+/* =========================================================
+   AVISO
+   ========================================================= */
+
+.aviso-tecnico {
+    background: #fff8e1;
+
+    border-left: 5px solid #f9a825;
+
+    padding: 14px 15px;
+
+    border-radius: 7px;
+
+    color: #5d4b13;
+}
+
+.aviso-tecnico strong {
+    display: block;
+
+    margin-bottom: 6px;
+}
+
+.aviso-tecnico p {
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   RODAPÉ
+   ========================================================= */
+
+.rodape {
+    text-align: center;
+
+    background: #e9ecef;
+
+    color: #666;
+
+    padding: 20px;
+
+    margin-top: 20px;
+
+    font-size: 13px;
+}
+
+.rodape p + p {
+    margin-top: 5px;
+}
+
+
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .cabecalho {
+        min-height: 90px;
+
+        padding: 8px 12px;
+
+        gap: 12px;
+    }
+
+    .logo {
+        width: 70px;
+        height: 70px;
+    }
+
+    .logo img {
+        width: 70px;
+        height: 70px;
+    }
+
+    .titulo-header h1 {
+        font-size: 24px;
+    }
+
+    .titulo-header p {
+        font-size: 15px;
+    }
+
+    .tela {
+        padding: 20px 12px 30px;
+    }
+
+    .servicos {
+        grid-template-columns: 1fr;
+
+        gap: 12px;
+    }
+
+    .servico-card {
+        padding: 17px;
+    }
+
+    .cartao-calculo {
+        padding: 18px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .linha-resultado {
+        align-items: flex-start;
+    }
+
+    .total-resultado {
+        flex-direction: column;
+
+        align-items: flex-start;
+    }
+
+    .total-resultado strong {
+        font-size: 24px;
+    }
+}
+
+
+@media (max-width: 380px) {
+
+    .titulo-header h1 {
+        font-size: 21px;
+    }
+
+    .titulo-header p {
+        font-size: 14px;
+    }
+
+    .cartao-calculo {
+        padding: 15px;
+    }
+
+    .icone-servico {
+        font-size: 35px;
+    }
+
+    .servico-card h3 {
+        font-size: 18px;
+    }
+}
