@@ -143,6 +143,13 @@
                 <span>Cadastre, consulte, edite e exclua clientes da sua conta.</span>
             </span>
         </button>
+        <button type="button" class="apr-acesso-clientes" onclick="abrirObras()">
+            <span class="apr-acesso-icone">🏗️</span>
+            <span class="apr-acesso-texto">
+                <strong>Obras</strong>
+                <span>Cadastre, consulte, edite e exclua as obras dos seus clientes.</span>
+            </span>
+        </button>
     </div>
     <section class="apr-categoria apr-estrutura">
         <div class="apr-categoria-titulo"><div class="apr-categoria-icone">🏗️</div><h2>ESTRUTURA</h2><span>BASE FORTE PARA SUA OBRA</span><b>›</b></div>
@@ -196,6 +203,68 @@
         </div>
     </section>
 </main>
+
+
+    <!-- =====================================================
+         OBRAS
+         ===================================================== -->
+
+    <main id="obras" class="tela apr-clientes-tela" style="display:none;">
+        <button class="botao-voltar" onclick="voltarInicio()">
+            ← Voltar
+        </button>
+
+        <div class="apr-clientes-cabecalho">
+            <div>
+                <h2>🏗️ Obras</h2>
+                <p>Cadastre as obras e vincule cada uma ao cliente correspondente.</p>
+            </div>
+            <div class="apr-clientes-botoes">
+                <button type="button" class="apr-btn-cliente primario" onclick="novaObra()">＋ Nova obra</button>
+            </div>
+        </div>
+
+        <form id="formObra" class="apr-cliente-form">
+            <h3 id="obraFormTitulo">Nova obra</h3>
+
+            <div class="form-grid">
+                <div class="campo" style="grid-column:1/-1;">
+                    <label for="obraCliente">Cliente *</label>
+                    <select id="obraCliente" required>
+                        <option value="">Selecione o cliente</option>
+                    </select>
+                </div>
+                <div class="campo" style="grid-column:1/-1;">
+                    <label for="obraNome">Nome da obra *</label>
+                    <input id="obraNome" type="text" maxlength="200" required placeholder="Ex.: Reforma da residência">
+                </div>
+                <div class="campo" style="grid-column:1/-1;">
+                    <label for="obraEndereco">Endereço da obra</label>
+                    <input id="obraEndereco" type="text" maxlength="300" placeholder="Rua, número, bairro...">
+                </div>
+                <div class="campo" style="grid-column:1/-1;">
+                    <label for="obraObservacoes">Observações</label>
+                    <textarea id="obraObservacoes" maxlength="3000" placeholder="Informações importantes sobre a obra"></textarea>
+                </div>
+            </div>
+
+            <div class="apr-cliente-mensagem" id="obraMensagem" aria-live="polite"></div>
+
+            <div class="apr-clientes-botoes">
+                <button type="submit" class="apr-btn-cliente primario">Salvar obra</button>
+                <button type="button" class="apr-btn-cliente secundario" onclick="cancelarEdicaoObra()">Cancelar</button>
+            </div>
+        </form>
+
+        <section>
+            <div class="apr-clientes-cabecalho">
+                <div><h2 style="font-size:21px;">Minhas obras</h2></div>
+            </div>
+            <div id="listaObras">
+                <div class="apr-clientes-vazio">Carregando obras...</div>
+            </div>
+        </section>
+    </main>
 
 
     <!-- =====================================================

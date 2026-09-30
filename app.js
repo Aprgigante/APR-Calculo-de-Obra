@@ -419,9 +419,263 @@ async function salvarCliente(evento) {
     }
 }
 
+/* =========================================================
+   OBRAS
+   ========================================================= */
+
+let obraEditandoId = null;
+
+function mostrarMensagemObra(mensagem, erro = false) {
+    const el = document.getElementById("obraMensagem");
+    if (!el) return;
+    el.textContent = mensagem || "";
+    el.classList.toggle("erro", erro);
+}
+
+function limparFormularioObra() {
+    const form = document.getElementById("formObra");
+    if (form) form.reset();
+    obraEditandoId = null;
+    const titulo = document.getElementById("obraFormTitulo");
+    if (titulo) titulo.textContent = "Nova obra";
+    mostrarMensagemObra("");
+}
+
+function novaObra() {
+    limparFormularioObra();
+    carregarClientesParaObra().then(function () {
+        const campo = document.getElementById("obraCliente");
+        if (campo) {
+            setTimeout(function () {
+                campo.focus();
+                campo.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 100);
+        }
+    });
+}
+
+function cancelarEdicaoObra() {
+    limparFormularioObra();
+}
+
+async function carregarClientesParaObra() {
+    const select = document.getElementById("obraCliente");
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Carregando clientes...</option>';
+
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data, error } = await obterSupabase()
+            .from("clientes")
+            .select("id, nome")
+            .eq("user_id", usuario.id)
+            .order("nome", { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            select.innerHTML = '<option value="">Cadastre um cliente primeiro</option>';
+            return;
+        }
+
+        select.innerHTML = '<option value="">Selecione o cliente</option>' +
+            data.map(function (cliente) {
+                return `<option value="${cliente.id}">${escaparHtmlCliente(cliente.nome)}</option>`;
+            }).join("");
+    } catch (erro) {
+        console.error("Erro ao carregar clientes para obra:", erro);
+        select.innerHTML = '<option value="">Não foi possível carregar os clientes</option>';
+        mostrarMensagemObra(erro?.message || "Não foi possível carregar os clientes.", true);
+    }
+}
+
+async function carregarObras() {
+    const lista = document.getElementById("listaObras");
+    if (!lista) return;
+
+    lista.innerHTML = '<div class="apr-clientes-vazio">Carregando obras...</div>';
+
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data: obras, error: erroObras } = await obterSupabase()
+            .from("obras")
+            .select("id, cliente_id, nome, endereco, observacoes, created_at, updated_at")
+            .eq("user_id", usuario.id)
+            .order("nome", { ascending: true });
+
+        if (erroObras) throw erroObras;
+
+        if (!obras || obras.length === 0) {
+            lista.innerHTML = '<div class="apr-clientes-vazio">Nenhuma obra cadastrada ainda.<br>Clique em <strong>＋ Nova obra</strong> para começar.</div>';
+            return;
+        }
+
+        const idsClientes = [...new Set(obras.map(o => o.cliente_id).filter(Boolean))];
+        let mapaClientes = {};
+
+        if (idsClientes.length) {
+            const { data: clientes, error: erroClientes } = await obterSupabase()
+                .from("clientes")
+                .select("id, nome")
+                .eq("user_id", usuario.id)
+                .in("id", idsClientes);
+
+            if (erroClientes) throw erroClientes;
+            (clientes || []).forEach(function (cliente) {
+                mapaClientes[cliente.id] = cliente.nome;
+            });
+        }
+
+        lista.innerHTML = obras.map(function (obra) {
+            const clienteNome = mapaClientes[obra.cliente_id] || "Cliente não encontrado";
+            const detalhes = [
+                `<div><strong>Cliente:</strong> ${escaparHtmlCliente(clienteNome)}</div>`,
+                obra.endereco ? `<div><strong>Endereço:</strong> ${escaparHtmlCliente(obra.endereco)}</div>` : ""
+            ].filter(Boolean).join("");
+
+            const observacoes = obra.observacoes
+                ? `<div class="apr-cliente-observacoes"><strong>Observações:</strong><br>${escaparHtmlCliente(obra.observacoes)}</div>`
+                : "";
+
+            return `
+                <article class="apr-cliente-card">
+                    <div class="apr-cliente-topo">
+                        <div><h3>${escaparHtmlCliente(obra.nome)}</h3></div>
+                        <div class="apr-cliente-acoes">
+                            <button type="button" onclick="editarObra('${obra.id}')">Editar</button>
+                            <button type="button" onclick="excluirObra('${obra.id}')">Excluir</button>
+                        </div>
+                    </div>
+                    <div class="apr-cliente-info">${detalhes}</div>
+                    ${observacoes}
+                </article>
+            `;
+        }).join("");
+    } catch (erro) {
+        console.error("Erro ao carregar obras:", erro);
+        lista.innerHTML = `<div class="apr-clientes-vazio" style="color:#b42318;">Não foi possível carregar as obras.<br>${escaparHtmlCliente(erro?.message || "Erro desconhecido")}</div>`;
+    }
+}
+
+async function editarObra(id) {
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data, error } = await obterSupabase()
+            .from("obras")
+            .select("id, cliente_id, nome, endereco, observacoes")
+            .eq("id", id)
+            .eq("user_id", usuario.id)
+            .single();
+
+        if (error) throw error;
+        if (!data) throw new Error("Obra não encontrada.");
+
+        obraEditandoId = data.id;
+        await carregarClientesParaObra();
+        document.getElementById("obraCliente").value = data.cliente_id || "";
+        document.getElementById("obraNome").value = data.nome || "";
+        document.getElementById("obraEndereco").value = data.endereco || "";
+        document.getElementById("obraObservacoes").value = data.observacoes || "";
+        document.getElementById("obraFormTitulo").textContent = "Editar obra";
+        mostrarMensagemObra("");
+
+        document.getElementById("formObra").scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("obraNome").focus();
+    } catch (erro) {
+        console.error("Erro ao editar obra:", erro);
+        mostrarMensagemObra(erro?.message || "Não foi possível carregar a obra.", true);
+    }
+}
+
+async function excluirObra(id) {
+    const confirmar = window.confirm("Deseja realmente excluir esta obra?");
+    if (!confirmar) return;
+
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { error } = await obterSupabase()
+            .from("obras")
+            .delete()
+            .eq("id", id)
+            .eq("user_id", usuario.id);
+
+        if (error) throw error;
+
+        if (obraEditandoId === id) limparFormularioObra();
+        await carregarObras();
+    } catch (erro) {
+        console.error("Erro ao excluir obra:", erro);
+        alert(erro?.message || "Não foi possível excluir a obra.");
+    }
+}
+
+async function salvarObra(evento) {
+    evento.preventDefault();
+
+    const clienteId = document.getElementById("obraCliente")?.value;
+    const nome = document.getElementById("obraNome")?.value.trim();
+    const endereco = document.getElementById("obraEndereco")?.value.trim();
+    const observacoes = document.getElementById("obraObservacoes")?.value.trim();
+
+    if (!clienteId) {
+        mostrarMensagemObra("Selecione o cliente da obra.", true);
+        document.getElementById("obraCliente")?.focus();
+        return;
+    }
+
+    if (!nome) {
+        mostrarMensagemObra("Informe o nome da obra.", true);
+        document.getElementById("obraNome")?.focus();
+        return;
+    }
+
+    try {
+        mostrarMensagemObra(obraEditandoId ? "Atualizando obra..." : "Salvando obra...");
+        const usuario = await obterUsuarioAutenticado();
+        const dados = {
+            cliente_id: clienteId,
+            nome,
+            endereco: endereco || null,
+            observacoes: observacoes || null
+        };
+
+        let resultado;
+
+        if (obraEditandoId) {
+            resultado = await obterSupabase()
+                .from("obras")
+                .update(dados)
+                .eq("id", obraEditandoId)
+                .eq("user_id", usuario.id);
+        } else {
+            resultado = await obterSupabase()
+                .from("obras")
+                .insert({ ...dados, user_id: usuario.id });
+        }
+
+        if (resultado.error) throw resultado.error;
+
+        const mensagemSucesso = obraEditandoId
+            ? "Obra atualizada com sucesso."
+            : "Obra salva com sucesso.";
+
+        limparFormularioObra();
+        await carregarClientesParaObra();
+        mostrarMensagemObra(mensagemSucesso);
+        await carregarObras();
+    } catch (erro) {
+        console.error("Erro ao salvar obra:", erro);
+        mostrarMensagemObra(erro?.message || "Não foi possível salvar a obra.", true);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("formCliente");
     if (form) form.addEventListener("submit", salvarCliente);
+
+    const formObra = document.getElementById("formObra");
+    if (formObra) formObra.addEventListener("submit", salvarObra);
 });
 
 /* =========================================================
@@ -437,6 +691,7 @@ function esconderTodasAsTelas() {
 
     document.getElementById("inicio").style.display = "none";
     document.getElementById("clientes").style.display = "none";
+    document.getElementById("obras").style.display = "none";
     document.getElementById("impermeabilizacao").style.display = "none";
     document.getElementById("alvenaria").style.display = "none";
     document.getElementById("chapisco").style.display = "none";
@@ -462,6 +717,19 @@ function esconderTodasAsTelas() {
     document.getElementById("eletricaProtecoes").style.display = "none";
     document.getElementById("eletricaAterramento").style.display = "none";
     document.getElementById("eletricaEntradaEnergia").style.display = "none";
+}
+
+
+function abrirObras() {
+
+    esconderTodasAsTelas();
+
+    document.getElementById("obras").style.display = "block";
+
+    limparFormularioObra();
+    carregarClientesParaObra();
+    carregarObras();
+    rolarParaTopo();
 }
 
 
