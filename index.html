@@ -43,6 +43,21 @@
 @media(max-width:600px){.apr-auth-card{padding:22px 18px}.apr-auth-card h1{font-size:24px}.apr-conta-bar{justify-content:space-between;gap:8px;flex-wrap:wrap}}
 </style>
 
+
+<style id="apr-clientes-style">
+.apr-acesso-cadastros{margin:12px 0 4px;padding:0 8px}
+.apr-acesso-clientes{width:100%;display:flex;align-items:center;gap:14px;border:1px solid #cfdbe8;border-radius:14px;background:#fff;padding:13px 16px;cursor:pointer;text-align:left;box-shadow:0 3px 10px rgba(0,35,80,.10)}
+.apr-acesso-clientes:hover{box-shadow:0 5px 14px rgba(0,35,80,.16);transform:translateY(-1px)}
+.apr-acesso-icone{font-size:32px;line-height:1}.apr-acesso-texto{display:flex;flex-direction:column;gap:3px}.apr-acesso-texto strong{font:900 17px/1.1 Arial,sans-serif;color:#12365d}.apr-acesso-texto span{font:500 13px/1.25 Arial,sans-serif;color:#5c6f82}
+#clientes.apr-clientes-tela{max-width:1000px;margin:0 auto;padding:18px}
+.apr-clientes-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.apr-clientes-cabecalho h2{margin:0;color:#12365d}.apr-clientes-cabecalho p{margin:4px 0 0;color:#5c6f82}
+.apr-clientes-botoes{display:flex;gap:8px;flex-wrap:wrap}.apr-btn-cliente{border:0;border-radius:9px;padding:10px 14px;font-weight:800;cursor:pointer}.apr-btn-cliente.primario{background:#1565c0;color:#fff}.apr-btn-cliente.secundario{background:#e8eef5;color:#29435e}.apr-btn-cliente.perigo{background:#b42318;color:#fff}
+.apr-cliente-card{background:#fff;border:1px solid #d7e1eb;border-radius:13px;padding:15px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,35,80,.08)}
+.apr-cliente-topo{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.apr-cliente-topo h3{margin:0;color:#163b62;font-size:18px}.apr-cliente-acoes{display:flex;gap:6px;flex-wrap:wrap}.apr-cliente-acoes button{border:1px solid #c9d5e2;border-radius:7px;background:#fff;padding:6px 9px;font-weight:700;cursor:pointer}.apr-cliente-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 18px;margin-top:11px;color:#465b70;font-size:14px}.apr-cliente-info div{min-width:0}.apr-cliente-observacoes{margin-top:10px;padding-top:10px;border-top:1px solid #e5ebf1;color:#52677c;font-size:14px;white-space:pre-wrap}
+.apr-cliente-form{background:#fff;border:1px solid #d7e1eb;border-radius:13px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,35,80,.08)}.apr-cliente-form h3{margin:0 0 13px;color:#163b62}.apr-cliente-form .campo label{font-weight:700}.apr-cliente-form textarea{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #c8d4e1;border-radius:9px;font:inherit;resize:vertical;min-height:88px}.apr-cliente-mensagem{min-height:22px;margin:8px 0;color:#1565c0;font-weight:700}.apr-cliente-mensagem.erro{color:#b42318}.apr-clientes-vazio{padding:22px;text-align:center;background:#f7fafc;border:1px dashed #c8d4e1;border-radius:12px;color:#5c6f82}
+@media(max-width:700px){.apr-cliente-info{grid-template-columns:1fr}.apr-cliente-topo{flex-direction:column}.apr-cliente-acoes{width:100%}.apr-cliente-acoes button{flex:1}.apr-acesso-cadastros{padding:0}.apr-acesso-clientes{padding:12px}}
+</style>
+
 </head>
 
 <body>
@@ -120,6 +135,15 @@
          ===================================================== -->
 
     <main id="inicio" class="tela apr-home">
+    <div class="apr-acesso-cadastros">
+        <button type="button" class="apr-acesso-clientes" onclick="abrirClientes()">
+            <span class="apr-acesso-icone">👤</span>
+            <span class="apr-acesso-texto">
+                <strong>Clientes</strong>
+                <span>Cadastre, consulte, edite e exclua clientes da sua conta.</span>
+            </span>
+        </button>
+    </div>
     <section class="apr-categoria apr-estrutura">
         <div class="apr-categoria-titulo"><div class="apr-categoria-icone">🏗️</div><h2>ESTRUTURA</h2><span>BASE FORTE PARA SUA OBRA</span><b>›</b></div>
         <div class="apr-cards apr-cards-5">
@@ -172,6 +196,76 @@
         </div>
     </section>
 </main>
+
+
+    <!-- =====================================================
+         CLIENTES
+         ===================================================== -->
+
+    <main id="clientes" class="tela apr-clientes-tela" style="display:none;">
+        <button class="botao-voltar" onclick="voltarInicio()">
+            ← Voltar
+        </button>
+
+        <div class="apr-clientes-cabecalho">
+            <div>
+                <h2>👤 Clientes</h2>
+                <p>Cadastre os clientes que serão usados nas obras e orçamentos.</p>
+            </div>
+            <div class="apr-clientes-botoes">
+                <button type="button" class="apr-btn-cliente primario" onclick="novoCliente()">＋ Novo cliente</button>
+            </div>
+        </div>
+
+        <form id="formCliente" class="apr-cliente-form">
+            <h3 id="clienteFormTitulo">Novo cliente</h3>
+
+            <div class="form-grid">
+                <div class="campo">
+                    <label for="clienteNome">Nome *</label>
+                    <input id="clienteNome" type="text" maxlength="150" autocomplete="name" required placeholder="Nome do cliente">
+                </div>
+                <div class="campo">
+                    <label for="clienteTelefone">Telefone</label>
+                    <input id="clienteTelefone" type="tel" maxlength="30" autocomplete="tel" placeholder="(00) 00000-0000">
+                </div>
+                <div class="campo">
+                    <label for="clienteEmail">E-mail</label>
+                    <input id="clienteEmail" type="email" maxlength="150" autocomplete="email" placeholder="cliente@email.com">
+                </div>
+                <div class="campo">
+                    <label for="clienteCpfCnpj">CPF / CNPJ</label>
+                    <input id="clienteCpfCnpj" type="text" maxlength="30" placeholder="CPF ou CNPJ">
+                </div>
+                <div class="campo" style="grid-column:1/-1;">
+                    <label for="clienteEndereco">Endereço</label>
+                    <input id="clienteEndereco" type="text" maxlength="250" autocomplete="street-address" placeholder="Endereço do cliente">
+                </div>
+                <div class="campo" style="grid-column:1/-1;">
+                    <label for="clienteObservacoes">Observações</label>
+                    <textarea id="clienteObservacoes" maxlength="2000" placeholder="Informações importantes sobre o cliente"></textarea>
+                </div>
+            </div>
+
+            <div class="apr-cliente-mensagem" id="clienteMensagem" aria-live="polite"></div>
+
+            <div class="apr-clientes-botoes">
+                <button type="submit" class="apr-btn-cliente primario">Salvar cliente</button>
+                <button type="button" class="apr-btn-cliente secundario" onclick="cancelarEdicaoCliente()">Cancelar</button>
+            </div>
+        </form>
+
+        <section>
+            <div class="apr-clientes-cabecalho">
+                <div>
+                    <h2 style="font-size:21px;">Meus clientes</h2>
+                </div>
+            </div>
+            <div id="listaClientes">
+                <div class="apr-clientes-vazio">Carregando clientes...</div>
+            </div>
+        </section>
+    </main>
 
 
     <!-- =====================================================

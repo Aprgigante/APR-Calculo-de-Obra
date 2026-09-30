@@ -182,6 +182,249 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 /* =========================================================
+   CLIENTES
+   ========================================================= */
+
+let clienteEditandoId = null;
+
+function obterUsuarioAutenticado() {
+    return obterSupabase().auth.getSession().then(function (resultado) {
+        const sessao = resultado?.data?.session;
+        if (!sessao?.user) {
+            throw new Error("Sua sessão expirou. Entre novamente para continuar.");
+        }
+        return sessao.user;
+    });
+}
+
+function mostrarMensagemCliente(mensagem, erro = false) {
+    const el = document.getElementById("clienteMensagem");
+    if (!el) return;
+    el.textContent = mensagem || "";
+    el.classList.toggle("erro", erro);
+}
+
+function limparFormularioCliente() {
+    const form = document.getElementById("formCliente");
+    if (form) form.reset();
+    clienteEditandoId = null;
+    const titulo = document.getElementById("clienteFormTitulo");
+    if (titulo) titulo.textContent = "Novo cliente";
+    mostrarMensagemCliente("");
+}
+
+function novoCliente() {
+    limparFormularioCliente();
+    const campo = document.getElementById("clienteNome");
+    if (campo) {
+        setTimeout(function () {
+            campo.focus();
+            campo.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 100);
+    }
+}
+
+function cancelarEdicaoCliente() {
+    limparFormularioCliente();
+}
+
+function escaparHtmlCliente(valor) {
+    return String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function formatarInfoCliente(rotulo, valor) {
+    if (!valor) return "";
+    return `<div><strong>${rotulo}:</strong> ${escaparHtmlCliente(valor)}</div>`;
+}
+
+async function carregarClientes() {
+    const lista = document.getElementById("listaClientes");
+    if (!lista) return;
+
+    lista.innerHTML = '<div class="apr-clientes-vazio">Carregando clientes...</div>';
+
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data, error } = await obterSupabase()
+            .from("clientes")
+            .select("id, nome, telefone, email, cpf_cnpj, endereco, observacoes, created_at, updated_at")
+            .eq("user_id", usuario.id)
+            .order("nome", { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            lista.innerHTML = '<div class="apr-clientes-vazio">Nenhum cliente cadastrado ainda.<br>Clique em <strong>＋ Novo cliente</strong> para começar.</div>';
+            return;
+        }
+
+        lista.innerHTML = data.map(function (cliente) {
+            const contato = [
+                formatarInfoCliente("Telefone", cliente.telefone),
+                formatarInfoCliente("E-mail", cliente.email),
+                formatarInfoCliente("CPF/CNPJ", cliente.cpf_cnpj),
+                formatarInfoCliente("Endereço", cliente.endereco)
+            ].filter(Boolean).join("");
+
+            const observacoes = cliente.observacoes
+                ? `<div class="apr-cliente-observacoes"><strong>Observações:</strong><br>${escaparHtmlCliente(cliente.observacoes)}</div>`
+                : "";
+
+            return `
+                <article class="apr-cliente-card">
+                    <div class="apr-cliente-topo">
+                        <div><h3>${escaparHtmlCliente(cliente.nome)}</h3></div>
+                        <div class="apr-cliente-acoes">
+                            <button type="button" onclick="editarCliente('${cliente.id}')">Editar</button>
+                            <button type="button" onclick="excluirCliente('${cliente.id}')">Excluir</button>
+                        </div>
+                    </div>
+                    ${contato ? `<div class="apr-cliente-info">${contato}</div>` : ""}
+                    ${observacoes}
+                </article>
+            `;
+        }).join("");
+    } catch (erro) {
+        console.error("Erro ao carregar clientes:", erro);
+        lista.innerHTML = `<div class="apr-clientes-vazio" style="color:#b42318;">Não foi possível carregar os clientes.<br>${escaparHtmlCliente(erro?.message || "Erro desconhecido")}</div>`;
+    }
+}
+
+async function editarCliente(id) {
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data, error } = await obterSupabase()
+            .from("clientes")
+            .select("id, nome, telefone, email, cpf_cnpj, endereco, observacoes")
+            .eq("id", id)
+            .eq("user_id", usuario.id)
+            .single();
+
+        if (error) throw error;
+        if (!data) throw new Error("Cliente não encontrado.");
+
+        clienteEditandoId = data.id;
+        document.getElementById("clienteNome").value = data.nome || "";
+        document.getElementById("clienteTelefone").value = data.telefone || "";
+        document.getElementById("clienteEmail").value = data.email || "";
+        document.getElementById("clienteCpfCnpj").value = data.cpf_cnpj || "";
+        document.getElementById("clienteEndereco").value = data.endereco || "";
+        document.getElementById("clienteObservacoes").value = data.observacoes || "";
+        document.getElementById("clienteFormTitulo").textContent = "Editar cliente";
+        mostrarMensagemCliente("");
+
+        document.getElementById("formCliente").scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("clienteNome").focus();
+    } catch (erro) {
+        console.error("Erro ao editar cliente:", erro);
+        mostrarMensagemCliente(erro?.message || "Não foi possível carregar o cliente.", true);
+    }
+}
+
+async function excluirCliente(id) {
+    const confirmar = window.confirm("Deseja realmente excluir este cliente?");
+    if (!confirmar) return;
+
+    try {
+        const usuario = await obterUsuarioAutenticado();
+
+        const { count, error: erroObras } = await obterSupabase()
+            .from("obras")
+            .select("id", { count: "exact", head: true })
+            .eq("cliente_id", id)
+            .eq("user_id", usuario.id);
+
+        if (erroObras) throw erroObras;
+
+        if (Number(count || 0) > 0) {
+            alert("Este cliente já possui obra(s) cadastrada(s).\n\nPor segurança, o cliente não será excluído para não apagar os dados relacionados.");
+            return;
+        }
+
+        const { error } = await obterSupabase()
+            .from("clientes")
+            .delete()
+            .eq("id", id)
+            .eq("user_id", usuario.id);
+
+        if (error) throw error;
+
+        if (clienteEditandoId === id) limparFormularioCliente();
+        await carregarClientes();
+    } catch (erro) {
+        console.error("Erro ao excluir cliente:", erro);
+        alert(erro?.message || "Não foi possível excluir o cliente.");
+    }
+}
+
+async function salvarCliente(evento) {
+    evento.preventDefault();
+
+    const nome = document.getElementById("clienteNome")?.value.trim();
+    const telefone = document.getElementById("clienteTelefone")?.value.trim();
+    const email = document.getElementById("clienteEmail")?.value.trim();
+    const cpfCnpj = document.getElementById("clienteCpfCnpj")?.value.trim();
+    const endereco = document.getElementById("clienteEndereco")?.value.trim();
+    const observacoes = document.getElementById("clienteObservacoes")?.value.trim();
+
+    if (!nome) {
+        mostrarMensagemCliente("Informe o nome do cliente.", true);
+        document.getElementById("clienteNome")?.focus();
+        return;
+    }
+
+    try {
+        mostrarMensagemCliente(clienteEditandoId ? "Atualizando cliente..." : "Salvando cliente...");
+        const usuario = await obterUsuarioAutenticado();
+        const dados = {
+            nome,
+            telefone: telefone || null,
+            email: email || null,
+            cpf_cnpj: cpfCnpj || null,
+            endereco: endereco || null,
+            observacoes: observacoes || null
+        };
+
+        let resultado;
+
+        if (clienteEditandoId) {
+            resultado = await obterSupabase()
+                .from("clientes")
+                .update(dados)
+                .eq("id", clienteEditandoId)
+                .eq("user_id", usuario.id);
+        } else {
+            resultado = await obterSupabase()
+                .from("clientes")
+                .insert({ ...dados, user_id: usuario.id });
+        }
+
+        if (resultado.error) throw resultado.error;
+
+        const mensagemSucesso = clienteEditandoId
+            ? "Cliente atualizado com sucesso."
+            : "Cliente salvo com sucesso.";
+
+        limparFormularioCliente();
+        mostrarMensagemCliente(mensagemSucesso);
+        await carregarClientes();
+    } catch (erro) {
+        console.error("Erro ao salvar cliente:", erro);
+        mostrarMensagemCliente(erro?.message || "Não foi possível salvar o cliente.", true);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("formCliente");
+    if (form) form.addEventListener("submit", salvarCliente);
+});
+
+/* =========================================================
    APR GIGANTE - CÁLCULO DE OBRA
    ========================================================= */
 
@@ -193,6 +436,7 @@ document.addEventListener("DOMContentLoaded", function () {
 function esconderTodasAsTelas() {
 
     document.getElementById("inicio").style.display = "none";
+    document.getElementById("clientes").style.display = "none";
     document.getElementById("impermeabilizacao").style.display = "none";
     document.getElementById("alvenaria").style.display = "none";
     document.getElementById("chapisco").style.display = "none";
@@ -218,6 +462,18 @@ function esconderTodasAsTelas() {
     document.getElementById("eletricaProtecoes").style.display = "none";
     document.getElementById("eletricaAterramento").style.display = "none";
     document.getElementById("eletricaEntradaEnergia").style.display = "none";
+}
+
+
+function abrirClientes() {
+
+    esconderTodasAsTelas();
+
+    document.getElementById("clientes").style.display = "block";
+
+    limparFormularioCliente();
+    carregarClientes();
+    rolarParaTopo();
 }
 
 
