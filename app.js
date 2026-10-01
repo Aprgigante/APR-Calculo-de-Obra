@@ -676,7 +676,388 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const formObra = document.getElementById("formObra");
     if (formObra) formObra.addEventListener("submit", salvarObra);
+
+    const formOrcamento = document.getElementById("formOrcamento");
+    if (formOrcamento) formOrcamento.addEventListener("submit", salvarOrcamento);
+
+    const selectClienteOrcamento = document.getElementById("orcamentoCliente");
+    if (selectClienteOrcamento) {
+        selectClienteOrcamento.addEventListener("change", function () {
+            carregarObrasParaOrcamento(this.value);
+        });
+    }
 });
+
+/* =========================================================
+   ORÇAMENTOS - ETAPA 1
+   ========================================================= */
+
+let orcamentoEditandoId = null;
+
+function mostrarMensagemOrcamento(mensagem, erro = false) {
+    const el = document.getElementById("orcamentoMensagem");
+    if (!el) return;
+    el.textContent = mensagem || "";
+    el.classList.toggle("erro", erro);
+}
+
+function limparFormularioOrcamento() {
+    const form = document.getElementById("formOrcamento");
+    if (form) form.reset();
+    orcamentoEditandoId = null;
+
+    const titulo = document.getElementById("orcamentoFormTitulo");
+    if (titulo) titulo.textContent = "Novo orçamento";
+
+    const obra = document.getElementById("orcamentoObra");
+    if (obra) {
+        obra.innerHTML = '<option value="">Selecione primeiro o cliente</option>';
+        obra.disabled = true;
+    }
+
+    mostrarMensagemOrcamento("");
+}
+
+function novoOrcamento() {
+    limparFormularioOrcamento();
+    carregarClientesParaOrcamento().then(function () {
+        const campo = document.getElementById("orcamentoCliente");
+        if (campo) {
+            setTimeout(function () {
+                campo.focus();
+                campo.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 100);
+        }
+    });
+}
+
+function cancelarEdicaoOrcamento() {
+    limparFormularioOrcamento();
+}
+
+async function carregarClientesParaOrcamento() {
+    const select = document.getElementById("orcamentoCliente");
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Carregando clientes...</option>';
+
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data, error } = await obterSupabase()
+            .from("clientes")
+            .select("id, nome")
+            .eq("user_id", usuario.id)
+            .order("nome", { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            select.innerHTML = '<option value="">Cadastre um cliente primeiro</option>';
+            const obra = document.getElementById("orcamentoObra");
+            if (obra) {
+                obra.innerHTML = '<option value="">Cadastre um cliente primeiro</option>';
+                obra.disabled = true;
+            }
+            return;
+        }
+
+        select.innerHTML = '<option value="">Selecione o cliente</option>' +
+            data.map(function (cliente) {
+                return `<option value="${cliente.id}">${escaparHtmlCliente(cliente.nome)}</option>`;
+            }).join("");
+    } catch (erro) {
+        console.error("Erro ao carregar clientes para orçamento:", erro);
+        select.innerHTML = '<option value="">Não foi possível carregar os clientes</option>';
+        mostrarMensagemOrcamento(erro?.message || "Não foi possível carregar os clientes.", true);
+    }
+}
+
+async function carregarObrasParaOrcamento(clienteId, obraSelecionadaId = "") {
+    const select = document.getElementById("orcamentoObra");
+    if (!select) return;
+
+    if (!clienteId) {
+        select.innerHTML = '<option value="">Selecione primeiro o cliente</option>';
+        select.disabled = true;
+        return;
+    }
+
+    select.innerHTML = '<option value="">Carregando obras...</option>';
+    select.disabled = true;
+
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data, error } = await obterSupabase()
+            .from("obras")
+            .select("id, nome")
+            .eq("user_id", usuario.id)
+            .eq("cliente_id", clienteId)
+            .order("nome", { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            select.innerHTML = '<option value="">Este cliente ainda não possui obra</option>';
+            select.disabled = true;
+            return;
+        }
+
+        select.innerHTML = '<option value="">Selecione a obra</option>' +
+            data.map(function (obra) {
+                return `<option value="${obra.id}">${escaparHtmlCliente(obra.nome)}</option>`;
+            }).join("");
+        select.disabled = false;
+
+        if (obraSelecionadaId) {
+            select.value = obraSelecionadaId;
+        }
+    } catch (erro) {
+        console.error("Erro ao carregar obras para orçamento:", erro);
+        select.innerHTML = '<option value="">Não foi possível carregar as obras</option>';
+        select.disabled = true;
+        mostrarMensagemOrcamento(erro?.message || "Não foi possível carregar as obras.", true);
+    }
+}
+
+async function proximoNumeroOrcamento(usuarioId) {
+    const { data, error } = await obterSupabase()
+        .from("orcamentos")
+        .select("numero")
+        .eq("user_id", usuarioId)
+        .not("numero", "is", null)
+        .order("numero", { ascending: false })
+        .limit(1);
+
+    if (error) throw error;
+
+    const ultimo = data && data.length ? Number(data[0].numero) : 0;
+    return Number.isFinite(ultimo) ? ultimo + 1 : 1;
+}
+
+async function carregarOrcamentos() {
+    const lista = document.getElementById("listaOrcamentos");
+    if (!lista) return;
+
+    lista.innerHTML = '<div class="apr-orcamento-vazio">Carregando orçamentos...</div>';
+
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data: orcamentos, error: erroOrcamentos } = await obterSupabase()
+            .from("orcamentos")
+            .select("id, cliente_id, obra_id, numero, descricao, status, total_materiais, total_mao_obra, total_geral, created_at, updated_at")
+            .eq("user_id", usuario.id)
+            .order("created_at", { ascending: false });
+
+        if (erroOrcamentos) throw erroOrcamentos;
+
+        if (!orcamentos || orcamentos.length === 0) {
+            lista.innerHTML = '<div class="apr-orcamento-vazio">Nenhum orçamento cadastrado ainda.<br>Clique em <strong>＋ Novo orçamento</strong> para começar.</div>';
+            return;
+        }
+
+        const idsClientes = [...new Set(orcamentos.map(o => o.cliente_id).filter(Boolean))];
+        const idsObras = [...new Set(orcamentos.map(o => o.obra_id).filter(Boolean))];
+        const mapaClientes = {};
+        const mapaObras = {};
+
+        if (idsClientes.length) {
+            const { data: clientes, error } = await obterSupabase()
+                .from("clientes")
+                .select("id, nome")
+                .eq("user_id", usuario.id)
+                .in("id", idsClientes);
+            if (error) throw error;
+            (clientes || []).forEach(function (cliente) {
+                mapaClientes[cliente.id] = cliente.nome;
+            });
+        }
+
+        if (idsObras.length) {
+            const { data: obras, error } = await obterSupabase()
+                .from("obras")
+                .select("id, nome")
+                .eq("user_id", usuario.id)
+                .in("id", idsObras);
+            if (error) throw error;
+            (obras || []).forEach(function (obra) {
+                mapaObras[obra.id] = obra.nome;
+            });
+        }
+
+        lista.innerHTML = orcamentos.map(function (orcamento) {
+            const clienteNome = mapaClientes[orcamento.cliente_id] || "Cliente não encontrado";
+            const obraNome = mapaObras[orcamento.obra_id] || "Obra não encontrada";
+            const numero = orcamento.numero ? `Orçamento nº ${escaparHtmlCliente(orcamento.numero)}` : "Orçamento sem número";
+            const status = escaparHtmlCliente(orcamento.status || "rascunho");
+            const descricao = orcamento.descricao
+                ? `<div class="apr-cliente-observacoes"><strong>Descrição:</strong><br>${escaparHtmlCliente(orcamento.descricao)}</div>`
+                : "";
+
+            return `
+                <article class="apr-orcamento-card">
+                    <div class="apr-cliente-topo">
+                        <div>
+                            <h3>${numero}</h3>
+                            <div style="margin-top:6px;"><span class="apr-orcamento-status">${status}</span></div>
+                        </div>
+                        <div class="apr-cliente-acoes">
+                            <button type="button" onclick="editarOrcamento('${orcamento.id}')">Editar</button>
+                            <button type="button" onclick="excluirOrcamento('${orcamento.id}')">Excluir</button>
+                        </div>
+                    </div>
+                    <div class="apr-cliente-info">
+                        <div><strong>Cliente:</strong> ${escaparHtmlCliente(clienteNome)}</div>
+                        <div><strong>Obra:</strong> ${escaparHtmlCliente(obraNome)}</div>
+                        <div><strong>Materiais:</strong> ${dinheiro(Number(orcamento.total_materiais || 0))}</div>
+                        <div><strong>Mão de obra:</strong> ${dinheiro(Number(orcamento.total_mao_obra || 0))}</div>
+                    </div>
+                    <div class="apr-orcamento-total" style="margin-top:12px;">Total: ${dinheiro(Number(orcamento.total_geral || 0))}</div>
+                    ${descricao}
+                </article>
+            `;
+        }).join("");
+    } catch (erro) {
+        console.error("Erro ao carregar orçamentos:", erro);
+        lista.innerHTML = `<div class="apr-orcamento-vazio" style="color:#b42318;">Não foi possível carregar os orçamentos.<br>${escaparHtmlCliente(erro?.message || "Erro desconhecido")}</div>`;
+    }
+}
+
+async function editarOrcamento(id) {
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data, error } = await obterSupabase()
+            .from("orcamentos")
+            .select("id, cliente_id, obra_id, numero, descricao, status")
+            .eq("id", id)
+            .eq("user_id", usuario.id)
+            .single();
+
+        if (error) throw error;
+        if (!data) throw new Error("Orçamento não encontrado.");
+
+        orcamentoEditandoId = data.id;
+        await carregarClientesParaOrcamento();
+        document.getElementById("orcamentoCliente").value = data.cliente_id || "";
+        await carregarObrasParaOrcamento(data.cliente_id, data.obra_id);
+        document.getElementById("orcamentoNumero").value = data.numero || "";
+        document.getElementById("orcamentoStatus").value = data.status || "rascunho";
+        document.getElementById("orcamentoDescricao").value = data.descricao || "";
+        document.getElementById("orcamentoFormTitulo").textContent = "Editar orçamento";
+        mostrarMensagemOrcamento("");
+
+        document.getElementById("formOrcamento").scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("orcamentoCliente").focus();
+    } catch (erro) {
+        console.error("Erro ao editar orçamento:", erro);
+        mostrarMensagemOrcamento(erro?.message || "Não foi possível carregar o orçamento.", true);
+    }
+}
+
+async function excluirOrcamento(id) {
+    const confirmar = window.confirm("Deseja realmente excluir este orçamento? Os itens vinculados a ele também serão excluídos.");
+    if (!confirmar) return;
+
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { error } = await obterSupabase()
+            .from("orcamentos")
+            .delete()
+            .eq("id", id)
+            .eq("user_id", usuario.id);
+
+        if (error) throw error;
+
+        if (orcamentoEditandoId === id) limparFormularioOrcamento();
+        await carregarOrcamentos();
+    } catch (erro) {
+        console.error("Erro ao excluir orçamento:", erro);
+        alert(erro?.message || "Não foi possível excluir o orçamento.");
+    }
+}
+
+async function salvarOrcamento(evento) {
+    evento.preventDefault();
+
+    const clienteId = document.getElementById("orcamentoCliente")?.value;
+    const obraId = document.getElementById("orcamentoObra")?.value;
+    const numeroCampo = document.getElementById("orcamentoNumero")?.value.trim();
+    const descricao = document.getElementById("orcamentoDescricao")?.value.trim();
+    const status = document.getElementById("orcamentoStatus")?.value || "rascunho";
+
+    if (!clienteId) {
+        mostrarMensagemOrcamento("Selecione o cliente do orçamento.", true);
+        document.getElementById("orcamentoCliente")?.focus();
+        return;
+    }
+
+    if (!obraId) {
+        mostrarMensagemOrcamento("Selecione a obra do orçamento.", true);
+        document.getElementById("orcamentoObra")?.focus();
+        return;
+    }
+
+    let numero = numeroCampo ? Number(numeroCampo) : null;
+    if (numeroCampo && (!Number.isInteger(numero) || numero < 1)) {
+        mostrarMensagemOrcamento("O número do orçamento deve ser um número inteiro maior que zero.", true);
+        document.getElementById("orcamentoNumero")?.focus();
+        return;
+    }
+
+    try {
+        mostrarMensagemOrcamento(orcamentoEditandoId ? "Atualizando orçamento..." : "Salvando orçamento...");
+        const usuario = await obterUsuarioAutenticado();
+
+        if (!orcamentoEditandoId && numero === null) {
+            numero = await proximoNumeroOrcamento(usuario.id);
+        }
+
+        const dados = {
+            cliente_id: clienteId,
+            obra_id: obraId,
+            numero,
+            descricao: descricao || null,
+            status,
+            total_materiais: 0,
+            total_mao_obra: 0,
+            total_geral: 0
+        };
+
+        let resultado;
+
+        if (orcamentoEditandoId) {
+            const dadosEdicao = {
+                cliente_id: clienteId,
+                obra_id: obraId,
+                numero,
+                descricao: descricao || null,
+                status
+            };
+            resultado = await obterSupabase()
+                .from("orcamentos")
+                .update(dadosEdicao)
+                .eq("id", orcamentoEditandoId)
+                .eq("user_id", usuario.id);
+        } else {
+            resultado = await obterSupabase()
+                .from("orcamentos")
+                .insert({ ...dados, user_id: usuario.id });
+        }
+
+        if (resultado.error) throw resultado.error;
+
+        const mensagemSucesso = orcamentoEditandoId
+            ? "Orçamento atualizado com sucesso."
+            : `Orçamento nº ${numero} salvo com sucesso.`;
+
+        limparFormularioOrcamento();
+        await carregarClientesParaOrcamento();
+        mostrarMensagemOrcamento(mensagemSucesso);
+        await carregarOrcamentos();
+    } catch (erro) {
+        console.error("Erro ao salvar orçamento:", erro);
+        mostrarMensagemOrcamento(erro?.message || "Não foi possível salvar o orçamento.", true);
+    }
+}
 
 /* =========================================================
    APR GIGANTE - CÁLCULO DE OBRA
@@ -692,6 +1073,7 @@ function esconderTodasAsTelas() {
     document.getElementById("inicio").style.display = "none";
     document.getElementById("clientes").style.display = "none";
     document.getElementById("obras").style.display = "none";
+    document.getElementById("orcamentos").style.display = "none";
     document.getElementById("impermeabilizacao").style.display = "none";
     document.getElementById("alvenaria").style.display = "none";
     document.getElementById("chapisco").style.display = "none";
@@ -729,6 +1111,18 @@ function abrirObras() {
     limparFormularioObra();
     carregarClientesParaObra();
     carregarObras();
+    rolarParaTopo();
+}
+
+function abrirOrcamentos() {
+
+    esconderTodasAsTelas();
+
+    document.getElementById("orcamentos").style.display = "block";
+
+    limparFormularioOrcamento();
+    carregarClientesParaOrcamento();
+    carregarOrcamentos();
     rolarParaTopo();
 }
 

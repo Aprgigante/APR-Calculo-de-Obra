@@ -58,6 +58,16 @@
 @media(max-width:700px){.apr-cliente-info{grid-template-columns:1fr}.apr-cliente-topo{flex-direction:column}.apr-cliente-acoes{width:100%}.apr-cliente-acoes button{flex:1}.apr-acesso-cadastros{padding:0}.apr-acesso-clientes{padding:12px}}
 </style>
 
+<style id="apr-orcamentos-style">
+#orcamentos.apr-clientes-tela{max-width:1000px;margin:0 auto;padding:18px}
+.apr-orcamento-card{background:#fff;border:1px solid #d7e1eb;border-radius:13px;padding:15px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,35,80,.08)}
+.apr-orcamento-status{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#e8eef5;color:#29435e;font-size:12px;font-weight:800}
+.apr-orcamento-total{font-size:16px;font-weight:900;color:#12365d}
+.apr-orcamento-vazio{padding:22px;text-align:center;background:#f7fafc;border:1px dashed #c8d4e1;border-radius:12px;color:#5c6f82}
+.apr-orcamento-ajuda{margin:-4px 0 14px;color:#5c6f82;font-size:14px}
+@media(max-width:700px){#orcamentos.apr-clientes-tela{padding:14px}.apr-orcamento-card .apr-cliente-info{grid-template-columns:1fr}}
+</style>
+
 </head>
 
 <body>
@@ -148,6 +158,13 @@
             <span class="apr-acesso-texto">
                 <strong>Obras</strong>
                 <span>Cadastre, consulte, edite e exclua as obras dos seus clientes.</span>
+            </span>
+        </button>
+        <button type="button" class="apr-acesso-clientes" onclick="abrirOrcamentos()">
+            <span class="apr-acesso-icone">💰</span>
+            <span class="apr-acesso-texto">
+                <strong>Orçamentos</strong>
+                <span>Crie, consulte, edite e exclua os orçamentos das suas obras.</span>
             </span>
         </button>
     </div>
@@ -262,6 +279,81 @@
             </div>
             <div id="listaObras">
                 <div class="apr-clientes-vazio">Carregando obras...</div>
+            </div>
+        </section>
+    </main>
+
+
+    <!-- =====================================================
+         ORÇAMENTOS
+         ===================================================== -->
+
+    <main id="orcamentos" class="tela apr-clientes-tela" style="display:none;">
+        <button class="botao-voltar" onclick="voltarInicio()">
+            ← Voltar
+        </button>
+
+        <div class="apr-clientes-cabecalho">
+            <div>
+                <h2>💰 Orçamentos</h2>
+                <p>Crie e organize os orçamentos vinculados aos seus clientes e obras.</p>
+            </div>
+            <div class="apr-clientes-botoes">
+                <button type="button" class="apr-btn-cliente primario" onclick="novoOrcamento()">＋ Novo orçamento</button>
+            </div>
+        </div>
+
+        <form id="formOrcamento" class="apr-cliente-form">
+            <h3 id="orcamentoFormTitulo">Novo orçamento</h3>
+            <p class="apr-orcamento-ajuda">Nesta primeira etapa vamos cadastrar somente a identificação do orçamento. Os serviços e cálculos serão adicionados depois.</p>
+
+            <div class="form-grid">
+                <div class="campo">
+                    <label for="orcamentoCliente">Cliente *</label>
+                    <select id="orcamentoCliente" required>
+                        <option value="">Selecione o cliente</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="orcamentoObra">Obra *</label>
+                    <select id="orcamentoObra" required disabled>
+                        <option value="">Selecione primeiro o cliente</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="orcamentoNumero">Número do orçamento</label>
+                    <input id="orcamentoNumero" type="number" min="1" step="1" inputmode="numeric" placeholder="Automático se deixar em branco">
+                </div>
+                <div class="campo">
+                    <label for="orcamentoStatus">Status</label>
+                    <select id="orcamentoStatus">
+                        <option value="rascunho" selected>Rascunho</option>
+                        <option value="em_analise">Em análise</option>
+                        <option value="aprovado">Aprovado</option>
+                        <option value="recusado">Recusado</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="campo" style="grid-column:1/-1;">
+                    <label for="orcamentoDescricao">Descrição</label>
+                    <textarea id="orcamentoDescricao" maxlength="3000" placeholder="Ex.: Orçamento para reforma completa da residência"></textarea>
+                </div>
+            </div>
+
+            <div class="apr-cliente-mensagem" id="orcamentoMensagem" aria-live="polite"></div>
+
+            <div class="apr-clientes-botoes">
+                <button type="submit" class="apr-btn-cliente primario">Salvar orçamento</button>
+                <button type="button" class="apr-btn-cliente secundario" onclick="cancelarEdicaoOrcamento()">Cancelar</button>
+            </div>
+        </form>
+
+        <section>
+            <div class="apr-clientes-cabecalho">
+                <div><h2 style="font-size:21px;">Meus orçamentos</h2></div>
+            </div>
+            <div id="listaOrcamentos">
+                <div class="apr-orcamento-vazio">Carregando orçamentos...</div>
             </div>
         </section>
     </main>
