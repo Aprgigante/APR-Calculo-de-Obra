@@ -66,6 +66,25 @@
 .apr-orcamento-vazio{padding:22px;text-align:center;background:#f7fafc;border:1px dashed #c8d4e1;border-radius:12px;color:#5c6f82}
 .apr-orcamento-ajuda{margin:-4px 0 14px;color:#5c6f82;font-size:14px}
 @media(max-width:700px){#orcamentos.apr-clientes-tela{padding:14px}.apr-orcamento-card .apr-cliente-info{grid-template-columns:1fr}}
+<style id="apr-orcamento-itens-style">
+.apr-orcamento-itens{margin:16px 0;background:#f7fafc;border:1px solid #d7e1eb;border-radius:13px;padding:15px}
+.apr-orcamento-itens h3{margin:0 0 8px;color:#163b62}
+.apr-orcamento-itens-ajuda{margin:0 0 12px;color:#5c6f82;font-size:14px}
+.apr-orcamento-itens-controles{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.apr-orcamento-itens-controles .campo{flex:1;min-width:220px}
+.apr-orcamento-itens select{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #c8d4e1;border-radius:9px;background:#fff;font:inherit}
+.apr-item-card{background:#fff;border:1px solid #d7e1eb;border-radius:12px;padding:13px;margin-top:10px}
+.apr-item-topo{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.apr-item-topo h4{margin:0;color:#163b62;font-size:17px}
+.apr-item-botoes{display:flex;gap:6px;flex-wrap:wrap}
+.apr-item-botoes button{border:1px solid #c9d5e2;border-radius:7px;background:#fff;padding:6px 9px;font-weight:700;cursor:pointer}
+.apr-item-botoes button.perigo{background:#b42318;color:#fff;border-color:#b42318}
+.apr-item-opcoes{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;color:#465b70;font-size:14px}
+.apr-item-opcoes label{display:flex;align-items:center;gap:5px}
+.apr-item-valores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.apr-item-valores div{background:#f7fafc;border-radius:8px;padding:8px}.apr-item-valores strong{display:block;color:#12365d}
+.apr-orcamento-resumo{margin-top:12px;padding:12px;border-radius:10px;background:#eaf3ff;border:1px solid #cfe1f6;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;font-weight:800;color:#12365d}
+@media(max-width:700px){.apr-item-valores,.apr-orcamento-resumo{grid-template-columns:1fr}.apr-orcamento-itens-controles .campo{min-width:100%}}
 </style>
 
 </head>
@@ -347,6 +366,29 @@
                 <button type="button" class="apr-btn-cliente secundario" onclick="cancelarEdicaoOrcamento()">Cancelar</button>
             </div>
         </form>
+
+        <section id="painelAdicionarServicoOrcamento" class="apr-orcamento-itens" style="display:none;">
+            <h3>🧱 Adicionar serviço ao orçamento</h3>
+            <p id="servicoPendenteOrcamento" class="apr-orcamento-itens-ajuda">Nenhum serviço calculado.</p>
+            <div class="apr-orcamento-itens-controles">
+                <div class="campo">
+                    <label for="orcamentoDestinoServico">Escolha o orçamento</label>
+                    <select id="orcamentoDestinoServico">
+                        <option value="">Selecione o orçamento</option>
+                    </select>
+                </div>
+                <button type="button" class="apr-btn-cliente primario" onclick="salvarServicoPendenteNoOrcamento()">＋ Adicionar serviço</button>
+                <button type="button" class="apr-btn-cliente secundario" onclick="cancelarServicoPendente()">Cancelar</button>
+            </div>
+            <div id="mensagemServicoOrcamento" class="apr-cliente-mensagem" aria-live="polite"></div>
+        </section>
+
+        <section id="detalhesOrcamentoSelecionado" class="apr-orcamento-itens" style="display:none;">
+            <h3 id="tituloDetalhesOrcamento">Serviços do orçamento</h3>
+            <p class="apr-orcamento-itens-ajuda">Aqui você pode ativar/desativar cada serviço e escolher se os materiais e a mão de obra entram no total.</p>
+            <div id="listaItensOrcamento"></div>
+            <div id="resumoItensOrcamento" class="apr-orcamento-resumo"></div>
+        </section>
 
         <section>
             <div class="apr-clientes-cabecalho">
@@ -864,6 +906,10 @@
                     </div>
 
                 </section>
+
+                <div class="apr-clientes-botoes" style="margin-top:12px;">
+                    <button type="button" class="apr-btn-cliente primario" onclick="adicionarAlvenariaAoOrcamento()">＋ Adicionar Alvenaria ao orçamento</button>
+                </div>
 
 
                 <div class="aviso-tecnico">

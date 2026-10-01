@@ -901,6 +901,7 @@ async function carregarOrcamentos() {
                             <div style="margin-top:6px;"><span class="apr-orcamento-status">${status}</span></div>
                         </div>
                         <div class="apr-cliente-acoes">
+                            <button type="button" onclick="abrirDetalhesOrcamento('${orcamento.id}')">Serviços</button>
                             <button type="button" onclick="editarOrcamento('${orcamento.id}')">Editar</button>
                             <button type="button" onclick="excluirOrcamento('${orcamento.id}')">Excluir</button>
                         </div>
@@ -1060,6 +1061,219 @@ async function salvarOrcamento(evento) {
 }
 
 /* =========================================================
+   ORÇAMENTO - SERVIÇOS E ITENS
+   ========================================================= */
+
+let orcamentoServicoPendente = null;
+let orcamentoDetalheAtualId = null;
+
+function mostrarMensagemServicoOrcamento(mensagem, erro = false) {
+    const el = document.getElementById("mensagemServicoOrcamento");
+    if (!el) return;
+    el.textContent = mensagem || "";
+    el.classList.toggle("erro", erro);
+}
+
+function adicionarAlvenariaAoOrcamento() {
+    if (!window.ultimoResultadoAlvenaria) {
+        alert("Calcule a Alvenaria primeiro.");
+        return;
+    }
+
+    orcamentoServicoPendente = {
+        servico: "Alvenaria",
+        descricao: `Alvenaria - ${formatarNumero(window.ultimoResultadoAlvenaria.area, 2)} m²`,
+        valor_materiais: Number(window.ultimoResultadoAlvenaria.custoMateriais || 0),
+        valor_mao_obra: Number(window.ultimoResultadoAlvenaria.custoMaoObra || 0),
+        valor_total: Number(window.ultimoResultadoAlvenaria.custoTotal || 0),
+        dados_calculo: window.ultimoResultadoAlvenaria
+    };
+
+    abrirOrcamentos();
+
+    const painel = document.getElementById("painelAdicionarServicoOrcamento");
+    const texto = document.getElementById("servicoPendenteOrcamento");
+    if (painel) painel.style.display = "block";
+    if (texto) texto.textContent = `Alvenaria calculada: ${dinheiro(orcamentoServicoPendente.valor_total)} (materiais + mão de obra).`;
+    carregarOrcamentosParaAdicionarServico();
+}
+
+function cancelarServicoPendente() {
+    orcamentoServicoPendente = null;
+    const painel = document.getElementById("painelAdicionarServicoOrcamento");
+    if (painel) painel.style.display = "none";
+    mostrarMensagemServicoOrcamento("");
+}
+
+async function carregarOrcamentosParaAdicionarServico() {
+    const select = document.getElementById("orcamentoDestinoServico");
+    if (!select) return;
+    select.innerHTML = '<option value="">Carregando orçamentos...</option>';
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data, error } = await obterSupabase()
+            .from("orcamentos")
+            .select("id, numero, descricao, status")
+            .eq("user_id", usuario.id)
+            .order("created_at", { ascending: false });
+        if (error) throw error;
+        if (!data || !data.length) {
+            select.innerHTML = '<option value="">Crie um orçamento primeiro</option>';
+            return;
+        }
+        select.innerHTML = '<option value="">Selecione o orçamento</option>' + data.map(function(o) {
+            const numero = o.numero ? `nº ${o.numero}` : "sem número";
+            const desc = o.descricao ? ` - ${o.descricao}` : "";
+            return `<option value="${o.id}">Orçamento ${numero}${desc}</option>`;
+        }).join("");
+    } catch (erro) {
+        console.error("Erro ao carregar orçamentos para serviço:", erro);
+        select.innerHTML = '<option value="">Não foi possível carregar</option>';
+        mostrarMensagemServicoOrcamento(erro?.message || "Não foi possível carregar os orçamentos.", true);
+    }
+}
+
+async function salvarServicoPendenteNoOrcamento() {
+    if (!orcamentoServicoPendente) {
+        mostrarMensagemServicoOrcamento("Nenhum serviço calculado para adicionar.", true);
+        return;
+    }
+    const orcamentoId = document.getElementById("orcamentoDestinoServico")?.value;
+    if (!orcamentoId) {
+        mostrarMensagemServicoOrcamento("Selecione o orçamento.", true);
+        return;
+    }
+    try {
+        mostrarMensagemServicoOrcamento("Adicionando serviço...");
+        const usuario = await obterUsuarioAutenticado();
+        const { data: ultimo, error: erroOrdem } = await obterSupabase()
+            .from("orcamento_itens")
+            .select("ordem")
+            .eq("orcamento_id", orcamentoId)
+            .eq("user_id", usuario.id)
+            .order("ordem", { ascending: false })
+            .limit(1);
+        if (erroOrdem) throw erroOrdem;
+        const ordem = ultimo && ultimo.length ? Number(ultimo[0].ordem || 0) + 1 : 1;
+
+        const item = {
+            orcamento_id: orcamentoId,
+            user_id: usuario.id,
+            servico: orcamentoServicoPendente.servico,
+            descricao: orcamentoServicoPendente.descricao,
+            ativo: true,
+            incluir_materiais: true,
+            incluir_mao_obra: true,
+            valor_materiais: orcamentoServicoPendente.valor_materiais,
+            valor_mao_obra: orcamentoServicoPendente.valor_mao_obra,
+            valor_total: orcamentoServicoPendente.valor_total,
+            dados_calculo: orcamentoServicoPendente.dados_calculo,
+            ordem
+        };
+        const { data: novoItem, error } = await obterSupabase().from("orcamento_itens").insert(item).select("id").single();
+        if (error) throw error;
+        await recalcularTotaisOrcamento(orcamentoId);
+        orcamentoServicoPendente = null;
+        const painel = document.getElementById("painelAdicionarServicoOrcamento");
+        if (painel) painel.style.display = "none";
+        mostrarMensagemServicoOrcamento(`Serviço adicionado com sucesso${novoItem?.id ? "." : "."}`);
+        await abrirDetalhesOrcamento(orcamentoId);
+        await carregarOrcamentos();
+    } catch (erro) {
+        console.error("Erro ao adicionar serviço ao orçamento:", erro);
+        mostrarMensagemServicoOrcamento(erro?.message || "Não foi possível adicionar o serviço.", true);
+    }
+}
+
+async function recalcularTotaisOrcamento(orcamentoId) {
+    const usuario = await obterUsuarioAutenticado();
+    const { data, error } = await obterSupabase()
+        .from("orcamento_itens")
+        .select("ativo, incluir_materiais, incluir_mao_obra, valor_materiais, valor_mao_obra")
+        .eq("orcamento_id", orcamentoId)
+        .eq("user_id", usuario.id);
+    if (error) throw error;
+    let materiais = 0, maoObra = 0;
+    (data || []).forEach(function(item) {
+        if (!item.ativo) return;
+        if (item.incluir_materiais) materiais += Number(item.valor_materiais || 0);
+        if (item.incluir_mao_obra) maoObra += Number(item.valor_mao_obra || 0);
+    });
+    const { error: erroUpdate } = await obterSupabase()
+        .from("orcamentos")
+        .update({ total_materiais: materiais, total_mao_obra: maoObra, total_geral: materiais + maoObra })
+        .eq("id", orcamentoId)
+        .eq("user_id", usuario.id);
+    if (erroUpdate) throw erroUpdate;
+    return { materiais, maoObra, total: materiais + maoObra };
+}
+
+async function abrirDetalhesOrcamento(id) {
+    const painel = document.getElementById("detalhesOrcamentoSelecionado");
+    const lista = document.getElementById("listaItensOrcamento");
+    const titulo = document.getElementById("tituloDetalhesOrcamento");
+    const resumo = document.getElementById("resumoItensOrcamento");
+    if (!painel || !lista || !resumo) return;
+    orcamentoDetalheAtualId = id;
+    painel.style.display = "block";
+    lista.innerHTML = '<div class="apr-orcamento-vazio">Carregando serviços...</div>';
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data: itens, error } = await obterSupabase()
+            .from("orcamento_itens")
+            .select("id, servico, descricao, ativo, incluir_materiais, incluir_mao_obra, valor_materiais, valor_mao_obra, valor_total, ordem")
+            .eq("orcamento_id", id)
+            .eq("user_id", usuario.id)
+            .order("ordem", { ascending: true });
+        if (error) throw error;
+        if (titulo) titulo.textContent = "Serviços do orçamento";
+        if (!itens || !itens.length) {
+            lista.innerHTML = '<div class="apr-orcamento-vazio">Nenhum serviço adicionado ainda.</div>';
+        } else {
+            lista.innerHTML = itens.map(function(item) {
+                return `<article class="apr-item-card">
+                    <div class="apr-item-topo"><div><h4>🧱 ${escaparHtmlCliente(item.servico)}</h4><div style="margin-top:4px;color:#5c6f82;">${escaparHtmlCliente(item.descricao || "")}</div></div>
+                    <div class="apr-item-botoes"><button type="button" onclick="alternarItemOrcamento('${item.id}', 'ativo', ${!item.ativo})">${item.ativo ? "Desativar" : "Ativar"}</button><button type="button" class="perigo" onclick="excluirItemOrcamento('${item.id}')">Excluir</button></div></div>
+                    <div class="apr-item-opcoes"><label><input type="checkbox" ${item.incluir_materiais ? "checked" : ""} onchange="alternarItemOrcamento('${item.id}', 'incluir_materiais', this.checked)"> Materiais</label><label><input type="checkbox" ${item.incluir_mao_obra ? "checked" : ""} onchange="alternarItemOrcamento('${item.id}', 'incluir_mao_obra', this.checked)"> Mão de obra</label><span>Status: <strong>${item.ativo ? "Ativo" : "Desativado"}</strong></span></div>
+                    <div class="apr-item-valores"><div>Materiais<strong>${dinheiro(Number(item.valor_materiais || 0))}</strong></div><div>Mão de obra<strong>${dinheiro(Number(item.valor_mao_obra || 0))}</strong></div><div>Total do serviço<strong>${dinheiro(Number(item.valor_total || 0))}</strong></div></div>
+                </article>`;
+            }).join("");
+        }
+        const totais = await recalcularTotaisOrcamento(id);
+        resumo.innerHTML = `<div>Materiais<br>${dinheiro(totais.materiais)}</div><div>Mão de obra<br>${dinheiro(totais.maoObra)}</div><div>Total geral<br>${dinheiro(totais.total)}</div>`;
+    } catch (erro) {
+        console.error("Erro ao abrir detalhes do orçamento:", erro);
+        lista.innerHTML = `<div class="apr-orcamento-vazio" style="color:#b42318;">${escaparHtmlCliente(erro?.message || "Não foi possível carregar os serviços.")}</div>`;
+    }
+}
+
+async function alternarItemOrcamento(id, campo, valor) {
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const dados = {}; dados[campo] = valor;
+        const { data: item, error } = await obterSupabase().from("orcamento_itens").update(dados).eq("id", id).eq("user_id", usuario.id).select("orcamento_id").single();
+        if (error) throw error;
+        await recalcularTotaisOrcamento(item.orcamento_id);
+        await abrirDetalhesOrcamento(item.orcamento_id);
+        await carregarOrcamentos();
+    } catch (erro) { alert(erro?.message || "Não foi possível atualizar o serviço."); }
+}
+
+async function excluirItemOrcamento(id) {
+    if (!window.confirm("Deseja realmente excluir este serviço do orçamento?")) return;
+    try {
+        const usuario = await obterUsuarioAutenticado();
+        const { data: item, error: erroBusca } = await obterSupabase().from("orcamento_itens").select("orcamento_id").eq("id", id).eq("user_id", usuario.id).single();
+        if (erroBusca) throw erroBusca;
+        const { error } = await obterSupabase().from("orcamento_itens").delete().eq("id", id).eq("user_id", usuario.id);
+        if (error) throw error;
+        await recalcularTotaisOrcamento(item.orcamento_id);
+        await abrirDetalhesOrcamento(item.orcamento_id);
+        await carregarOrcamentos();
+    } catch (erro) { alert(erro?.message || "Não foi possível excluir o serviço."); }
+}
+
+/* =========================================================
    APR GIGANTE - CÁLCULO DE OBRA
    ========================================================= */
 
@@ -1123,6 +1337,16 @@ function abrirOrcamentos() {
     limparFormularioOrcamento();
     carregarClientesParaOrcamento();
     carregarOrcamentos();
+    if (orcamentoServicoPendente) {
+        const painel = document.getElementById("painelAdicionarServicoOrcamento");
+        if (painel) painel.style.display = "block";
+        const texto = document.getElementById("servicoPendenteOrcamento");
+        if (texto) texto.textContent = `Alvenaria calculada: ${dinheiro(orcamentoServicoPendente.valor_total)} (materiais + mão de obra).`;
+        carregarOrcamentosParaAdicionarServico();
+    } else {
+        const painel = document.getElementById("painelAdicionarServicoOrcamento");
+        if (painel) painel.style.display = "none";
+    }
     rolarParaTopo();
 }
 
@@ -2409,6 +2633,32 @@ function calcularAlvenaria() {
     ).textContent =
         `🪣 Areia: aproximadamente ${carrinhosAreia} carrinho(s) de ${litrosCarrinho} litros (${formatarNumero(areiaM3, 3)} m³)`;
 
+
+    window.ultimoResultadoAlvenaria = {
+        area,
+        blocos,
+        argamassa,
+        cimentoKg,
+        calKg,
+        areiaM3,
+        blocosCompra,
+        sacosCimento,
+        sacosCal,
+        carrinhosAreia,
+        litrosCarrinho,
+        precoBloco,
+        precoCimento,
+        precoCal,
+        precoAreia,
+        maoObra,
+        custoBlocos,
+        custoCimento,
+        custoCal,
+        custoAreia,
+        custoMateriais,
+        custoMaoObra,
+        custoTotal
+    };
 
     mostrarResultadoEIrPara("resultadoAlvenaria");
 }
