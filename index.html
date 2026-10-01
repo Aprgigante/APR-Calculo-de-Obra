@@ -85,6 +85,14 @@
 .apr-item-valores div{background:#f7fafc;border-radius:8px;padding:8px}.apr-item-valores strong{display:block;color:#12365d}
 .apr-orcamento-resumo{margin-top:12px;padding:12px;border-radius:10px;background:#eaf3ff;border:1px solid #cfe1f6;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;font-weight:800;color:#12365d}
 @media(max-width:700px){.apr-item-valores,.apr-orcamento-resumo{grid-template-columns:1fr}.apr-orcamento-itens-controles .campo{min-width:100%}}
+
+.apr-orcamento-itens-cabecalho{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:12px}
+.apr-orcamento-itens-cabecalho h3{margin:0 0 6px}
+.apr-orcamento-servico-menu-wrap{position:relative;flex-shrink:0}
+.apr-orcamento-servico-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:#fff;border:1px solid #cfd9e3;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;min-width:190px}
+.apr-orcamento-servico-menu button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:10px 12px;border-radius:7px;cursor:pointer;font-weight:600;color:#123f70}
+.apr-orcamento-servico-menu button:hover{background:#eef5fb}
+@media(max-width:700px){.apr-orcamento-itens-cabecalho{flex-direction:column}.apr-orcamento-servico-menu-wrap{width:100%}.apr-orcamento-servico-menu{left:0;right:auto;width:100%}}
 </style>
 
 </head>
@@ -384,8 +392,19 @@
         </section>
 
         <section id="detalhesOrcamentoSelecionado" class="apr-orcamento-itens" style="display:none;">
-            <h3 id="tituloDetalhesOrcamento">Serviços do orçamento</h3>
-            <p class="apr-orcamento-itens-ajuda">Aqui você pode ativar/desativar cada serviço e escolher se os materiais e a mão de obra entram no total.</p>
+            <div class="apr-orcamento-itens-cabecalho">
+                <div>
+                    <h3 id="tituloDetalhesOrcamento">Serviços do orçamento</h3>
+                    <p class="apr-orcamento-itens-ajuda">Aqui você pode adicionar serviços, ativar/desativar cada um e escolher se os materiais e a mão de obra entram no total.</p>
+                </div>
+                <div class="apr-orcamento-servico-menu-wrap">
+                    <button type="button" class="apr-btn-cliente primario" onclick="mostrarMenuAdicionarServico()">＋ Adicionar serviço</button>
+                    <div id="menuAdicionarServico" class="apr-orcamento-servico-menu" style="display:none;">
+                        <button type="button" onclick="selecionarAlvenariaParaOrcamento()">🧱 Alvenaria</button>
+                        <button type="button" onclick="selecionarChapiscoParaOrcamento()">🪣 Chapisco</button>
+                    </div>
+                </div>
+            </div>
             <div id="listaItensOrcamento"></div>
             <div id="resumoItensOrcamento" class="apr-orcamento-resumo"></div>
         </section>
@@ -1205,6 +1224,8 @@
                     </p>
 
                 </div>
+
+                <button type="button" class="apr-btn-cliente primario" onclick="adicionarChapiscoAoOrcamento()">＋ Adicionar Chapisco ao orçamento</button>
 
             </div>
 

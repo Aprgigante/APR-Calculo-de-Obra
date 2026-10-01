@@ -1066,12 +1066,36 @@ async function salvarOrcamento(evento) {
 
 let orcamentoServicoPendente = null;
 let orcamentoDetalheAtualId = null;
+let orcamentoDestinoDiretoId = null;
 
 function mostrarMensagemServicoOrcamento(mensagem, erro = false) {
     const el = document.getElementById("mensagemServicoOrcamento");
     if (!el) return;
     el.textContent = mensagem || "";
     el.classList.toggle("erro", erro);
+}
+
+function mostrarMenuAdicionarServico() {
+    const menu = document.getElementById("menuAdicionarServico");
+    if (!menu) return;
+    menu.style.display = menu.style.display === "none" ? "block" : "none";
+}
+
+function selecionarAlvenariaParaOrcamento() {
+    const id = orcamentoDetalheAtualId;
+    const menu = document.getElementById("menuAdicionarServico");
+    if (menu) menu.style.display = "none";
+
+    if (!id) {
+        alert("Selecione primeiro um orçamento.");
+        return;
+    }
+
+    orcamentoDestinoDiretoId = id;
+    abrirAlvenaria();
+    setTimeout(function() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 100);
 }
 
 function adicionarAlvenariaAoOrcamento() {
@@ -1089,12 +1113,67 @@ function adicionarAlvenariaAoOrcamento() {
         dados_calculo: window.ultimoResultadoAlvenaria
     };
 
+    // Quando o usuário veio da tela "Serviços do orçamento", adiciona
+    // diretamente naquele orçamento, sem pedir para escolher novamente.
+    if (orcamentoDestinoDiretoId) {
+        const destino = orcamentoDestinoDiretoId;
+        salvarServicoPendenteNoOrcamento(destino);
+        return;
+    }
+
     abrirOrcamentos();
 
     const painel = document.getElementById("painelAdicionarServicoOrcamento");
     const texto = document.getElementById("servicoPendenteOrcamento");
     if (painel) painel.style.display = "block";
     if (texto) texto.textContent = `Alvenaria calculada: ${dinheiro(orcamentoServicoPendente.valor_total)} (materiais + mão de obra).`;
+    carregarOrcamentosParaAdicionarServico();
+}
+
+function selecionarChapiscoParaOrcamento() {
+    const id = orcamentoDetalheAtualId;
+    const menu = document.getElementById("menuAdicionarServico");
+    if (menu) menu.style.display = "none";
+
+    if (!id) {
+        alert("Selecione primeiro um orçamento.");
+        return;
+    }
+
+    orcamentoDestinoDiretoId = id;
+    abrirChapisco();
+    setTimeout(function() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 100);
+}
+
+function adicionarChapiscoAoOrcamento() {
+    if (!window.ultimoResultadoChapisco) {
+        alert("Calcule o Chapisco primeiro.");
+        return;
+    }
+
+    orcamentoServicoPendente = {
+        servico: "Chapisco",
+        descricao: `Chapisco - ${formatarNumero(window.ultimoResultadoChapisco.area, 2)} m²`,
+        valor_materiais: Number(window.ultimoResultadoChapisco.custoMateriais || 0),
+        valor_mao_obra: Number(window.ultimoResultadoChapisco.custoMaoObra || 0),
+        valor_total: Number(window.ultimoResultadoChapisco.custoTotal || 0),
+        dados_calculo: window.ultimoResultadoChapisco
+    };
+
+    if (orcamentoDestinoDiretoId) {
+        const destino = orcamentoDestinoDiretoId;
+        salvarServicoPendenteNoOrcamento(destino);
+        return;
+    }
+
+    abrirOrcamentos();
+
+    const painel = document.getElementById("painelAdicionarServicoOrcamento");
+    const texto = document.getElementById("servicoPendenteOrcamento");
+    if (painel) painel.style.display = "block";
+    if (texto) texto.textContent = `Chapisco calculado: ${dinheiro(orcamentoServicoPendente.valor_total)} (materiais + mão de obra).`;
     carregarOrcamentosParaAdicionarServico();
 }
 
@@ -1133,12 +1212,12 @@ async function carregarOrcamentosParaAdicionarServico() {
     }
 }
 
-async function salvarServicoPendenteNoOrcamento() {
+async function salvarServicoPendenteNoOrcamento(orcamentoIdDireto = null) {
     if (!orcamentoServicoPendente) {
         mostrarMensagemServicoOrcamento("Nenhum serviço calculado para adicionar.", true);
         return;
     }
-    const orcamentoId = document.getElementById("orcamentoDestinoServico")?.value;
+    const orcamentoId = orcamentoIdDireto || document.getElementById("orcamentoDestinoServico")?.value;
     if (!orcamentoId) {
         mostrarMensagemServicoOrcamento("Selecione o orçamento.", true);
         return;
@@ -1174,11 +1253,21 @@ async function salvarServicoPendenteNoOrcamento() {
         if (error) throw error;
         await recalcularTotaisOrcamento(orcamentoId);
         orcamentoServicoPendente = null;
+        const foiAdicaoDireta = Boolean(orcamentoDestinoDiretoId);
+        orcamentoDestinoDiretoId = null;
         const painel = document.getElementById("painelAdicionarServicoOrcamento");
         if (painel) painel.style.display = "none";
-        mostrarMensagemServicoOrcamento(`Serviço adicionado com sucesso${novoItem?.id ? "." : "."}`);
-        await abrirDetalhesOrcamento(orcamentoId);
-        await carregarOrcamentos();
+
+        if (foiAdicaoDireta) {
+            abrirOrcamentos();
+            setTimeout(async function() {
+                await abrirDetalhesOrcamento(orcamentoId);
+            }, 150);
+        } else {
+            mostrarMensagemServicoOrcamento(`Serviço adicionado com sucesso.`);
+            await abrirDetalhesOrcamento(orcamentoId);
+            await carregarOrcamentos();
+        }
     } catch (erro) {
         console.error("Erro ao adicionar serviço ao orçamento:", erro);
         mostrarMensagemServicoOrcamento(erro?.message || "Não foi possível adicionar o serviço.", true);
@@ -1215,6 +1304,8 @@ async function abrirDetalhesOrcamento(id) {
     const resumo = document.getElementById("resumoItensOrcamento");
     if (!painel || !lista || !resumo) return;
     orcamentoDetalheAtualId = id;
+    const menu = document.getElementById("menuAdicionarServico");
+    if (menu) menu.style.display = "none";
     painel.style.display = "block";
     lista.innerHTML = '<div class="apr-orcamento-vazio">Carregando serviços...</div>';
     try {
@@ -1330,6 +1421,7 @@ function abrirObras() {
 
 function abrirOrcamentos() {
 
+    orcamentoDestinoDiretoId = null;
     esconderTodasAsTelas();
 
     document.getElementById("orcamentos").style.display = "block";
@@ -2828,6 +2920,24 @@ function calcularChapisco() {
     ).textContent =
         `🪣 Areia grossa: aproximadamente ${carrinhosAreia} carrinho(s) de ${litrosCarrinho} litros (${formatarNumero(areiaM3, 3)} m³)`;
 
+    // Guarda o último cálculo para poder incluí-lo em um orçamento.
+    window.ultimoResultadoChapisco = {
+        area,
+        argamassa,
+        cimentoKg,
+        areiaM3,
+        sacosCimento,
+        carrinhosAreia,
+        litrosCarrinho,
+        precoCimento,
+        precoAreia,
+        maoObra,
+        custoCimento,
+        custoAreia,
+        custoMateriais,
+        custoMaoObra,
+        custoTotal
+    };
 
     mostrarResultadoEIrPara("resultadoChapisco");
 }
