@@ -5088,3 +5088,209 @@ function calcularImpermeabilizacao() {
 
     mostrarResultadoEIrPara("resultadoImpermeabilizacao");
 }
+/* =========================================================
+   INTEGRAÇÃO EM LOTE DOS SERVIÇOS AO ORÇAMENTO
+   Mantém a metodologia já aprovada em Alvenaria e Chapisco.
+   ========================================================= */
+(function () {
+    const SERVICOS_ORCAMENTO = [
+        { chave: "Alvenaria", icone: "🧱", tela: "alvenaria", abrir: "abrirAlvenaria", resultado: "resultadoAlvenaria", materiais: "custoMateriais", maoObra: "custoMaoObra", total: "custoTotal" },
+        { chave: "Chapisco", icone: "🪣", tela: "chapisco", abrir: "abrirChapisco", resultado: "resultadoChapisco", materiais: "chapiscoCustoMateriais", maoObra: "chapiscoCustoMaoObra", total: "chapiscoCustoTotal" },
+        { chave: "Emboço", icone: "🧱", tela: "emboco", abrir: "abrirEmboco", resultado: "resultadoEmboco", materiais: "embocoCustoMateriais", maoObra: "embocoCustoMaoObra", total: "embocoCustoTotal" },
+        { chave: "Contrapiso", icone: "🏗️", tela: "contrapiso", abrir: "abrirContrapiso", resultado: "resultadoContrapiso", materiais: "contrapisoCustoMateriais", maoObra: "contrapisoCustoMaoObra", total: "contrapisoCustoTotal" },
+        { chave: "Piso / Cerâmica", icone: "🏠", tela: "piso", abrir: "abrirPiso", resultado: "resultadoPiso", materiais: "pisoCustoMateriais", maoObra: "pisoCustoMaoObra", total: "pisoCustoTotal" },
+        { chave: "Concreto", icone: "🧱", tela: "concreto", abrir: "abrirConcreto", resultado: "resultadoConcreto", materiais: "concretoCustoMateriais", maoObra: "concretoCustoMaoObra", total: "concretoCustoTotal" },
+        { chave: "Sapata", icone: "🧱", tela: "fundacao", abrir: "abrirFundacao", resultado: "resultadoSapata", materiais: "sapataCustoMateriais", maoObra: "sapataCustoMaoObra", total: "sapataCustoTotal" },
+        { chave: "Viga Baldrame", icone: "🏗️", tela: "vigaBaldrame", abrir: "abrirVigaBaldrame", resultado: "resultadoVigaBaldrame", materiais: "vigaCustoMateriais", maoObra: "vigaCustoMaoObra", total: "vigaCustoTotal" },
+        { chave: "Bloco de Fundação", icone: "🧱", tela: "blocoFundacao", abrir: "abrirBlocoFundacao", resultado: "resultadoBlocoFundacao", materiais: "blocoCustoMateriais", maoObra: "blocoCustoMaoObra", total: "blocoCustoTotal" },
+        { chave: "Pintura", icone: "🎨", tela: "pintura", abrir: "abrirPintura", resultado: "resultadoPintura", materiais: "pinturaCustoMateriais", maoObra: "pinturaCustoMaoObra", total: "pinturaCustoTotal" },
+        { chave: "Hidráulica — Água Fria", icone: "🚰", tela: "hidraulica", abrir: "abrirHidraulica", resultado: "resultadoHidraulica", materiais: "hidraulicaCustoMateriais", maoObra: "hidraulicaCustoMaoObra", total: "hidraulicaCustoTotal" },
+        { chave: "Esgoto Sanitário", icone: "🚽", tela: "esgoto", abrir: "abrirEsgoto", resultado: "resultadoEsgoto", materiais: "esgotoCustoMateriais", maoObra: "esgotoCustoMaoObra", total: "esgotoCustoTotal" },
+        { chave: "Ralos e Caixas Sifonadas", icone: "🚿", tela: "ralosCaixas", abrir: "abrirRalosCaixas", resultado: "resultadoRalosCaixas", materiais: "ralosCustoMateriais", maoObra: "ralosCustoMaoObra", total: "ralosCustoTotal" },
+        { chave: "Caixa d'água / Reservatório", icone: "🚰", tela: "caixaAgua", abrir: "abrirCaixaAgua", resultado: "resultadoCaixaAgua", materiais: "caixaAguaCustoMateriais", maoObra: "caixaAguaCustoMaoObra", total: "caixaAguaCustoTotal" },
+        { chave: "Aparelhos Hidráulicos", icone: "🚿", tela: "aparelhosHidraulicos", abrir: "abrirAparelhosHidraulicos", resultado: "resultadoAparelhosHidraulicos", materiais: "aparelhosCustoMateriais", maoObra: "aparelhosCustoMaoObra", total: "aparelhosCustoTotal" },
+        { chave: "Telhado", icone: "🏠", tela: "telhado", abrir: "abrirTelhado", resultado: "resultadoTelhado", materiais: "telhadoCustoMateriais", maoObra: "telhadoCustoMaoObra", total: "telhadoCustoTotal" },
+        { chave: "Calhas e Rufos", icone: "🏠", tela: "calhasRufos", abrir: "abrirCalhasRufos", resultado: "resultadoCalhasRufos", materiais: "calhasCustoMateriais", maoObra: "calhasCustoMaoObra", total: "calhasCustoTotal" },
+        { chave: "Forro", icone: "🏠", tela: "forro", abrir: "abrirForro", resultado: "resultadoForro", materiais: "forroCustoMateriais", maoObra: "forroCustoMaoObra", total: "forroCustoTotal" },
+        { chave: "Impermeabilização", icone: "💧", tela: "impermeabilizacao", abrir: "abrirImpermeabilizacao", resultado: "resultadoImpermeabilizacao", materiais: "impermeabilizacaoCustoMateriais", maoObra: "impermeabilizacaoCustoMaoObra", total: "impermeabilizacaoCustoTotal" },
+        { chave: "Elétrica — Pontos", icone: "⚡", tela: "eletricaPontos", abrir: "abrirEletricaPontos", resultado: "resultadoEletricaPontos", materiais: "eletricaCustoMateriais", maoObra: "eletricaCustoMaoObra", total: "eletricaCustoTotal" },
+        { chave: "Elétrica — Eletrodutos e Cabos", icone: "🔌", tela: "eletricaCabos", abrir: "abrirEletricaCabos", resultado: "resultadoEletricaCabos", materiais: "eletricaCabosCustoMateriais", maoObra: "eletricaCabosCustoMaoObra", total: "eletricaCabosCustoTotal" },
+        { chave: "Quadro de Distribuição", icone: "⚡", tela: "eletricaQuadro", abrir: "abrirEletricaQuadro", resultado: "resultadoEletricaQuadro", materiais: "eletricaQuadroCustoMateriais", maoObra: "eletricaQuadroCustoMaoObra", total: "eletricaQuadroCustoTotal" },
+        { chave: "Disjuntores e Proteções", icone: "🛡️", tela: "eletricaProtecoes", abrir: "abrirEletricaProtecoes", resultado: "resultadoEletricaProtecoes", materiais: "eletricaProtCustoMateriais", maoObra: "eletricaProtCustoMaoObra", total: "eletricaProtCustoTotal" },
+        { chave: "Aterramento", icone: "🌎", tela: "eletricaAterramento", abrir: "abrirEletricaAterramento", resultado: "resultadoEletricaAterramento", materiais: "eletricaAterramentoCustoMateriais", maoObra: "eletricaAterramentoCustoMaoObra", total: "eletricaAterramentoCustoTotal" },
+        { chave: "Entrada de Energia", icone: "⚡", tela: "eletricaEntradaEnergia", abrir: "abrirEletricaEntradaEnergia", resultado: "resultadoEletricaEntradaEnergia", materiais: "eletricaEntradaCustoMateriais", maoObra: "eletricaEntradaCustoMaoObra", total: "eletricaEntradaCustoTotal" }
+    ];
+
+    const POR_CHAVE = Object.fromEntries(SERVICOS_ORCAMENTO.map(s => [s.chave, s]));
+
+    function numeroExibido(texto) {
+        if (!texto) return 0;
+        const limpo = String(texto).replace(/[^0-9,.-]/g, "").replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".");
+        const valor = Number(limpo);
+        return Number.isFinite(valor) ? valor : 0;
+    }
+
+    function obterResultadoAtual(servico) {
+        const materiaisEl = document.getElementById(servico.materiais);
+        const maoObraEl = document.getElementById(servico.maoObra);
+        const totalEl = document.getElementById(servico.total);
+        const resultadoEl = document.getElementById(servico.resultado);
+        if (!materiaisEl || !maoObraEl || !totalEl || !resultadoEl) return null;
+
+        return {
+            servico: servico.chave,
+            custoMateriais: numeroExibido(materiaisEl.textContent),
+            custoMaoObra: numeroExibido(maoObraEl.textContent),
+            custoTotal: numeroExibido(totalEl.textContent),
+            resultadoTexto: resultadoEl.innerText || resultadoEl.textContent || "",
+            calculadoEm: new Date().toISOString()
+        };
+    }
+
+    function definirUltimoResultado(servico) {
+        const resultado = obterResultadoAtual(servico);
+        if (!resultado) return;
+        const nome = "ultimoResultado" + servico.chave
+            .replace(/[^A-Za-zÀ-ÿ0-9]+(.)/g, (_, c) => c ? c.toUpperCase() : "")
+            .replace(/[^A-Za-zÀ-ÿ0-9]/g, "");
+        window[nome] = resultado;
+        window.ultimoResultadoServicoOrcamento = resultado;
+    }
+
+    function adicionarBotaoResultado(servico) {
+        if (servico.chave === "Alvenaria" || servico.chave === "Chapisco") return;
+        const resultadoEl = document.getElementById(servico.resultado);
+        if (!resultadoEl || resultadoEl.querySelector("[data-servico-orcamento]")) return;
+        const area = document.createElement("div");
+        area.className = "apr-clientes-botoes";
+        area.style.marginTop = "12px";
+        area.innerHTML = `<button type="button" class="apr-btn-cliente primario" data-servico-orcamento="${servico.chave}" onclick="adicionarServicoGenericoAoOrcamento('${servico.chave.replace(/'/g, "\\'")}')">＋ Adicionar ${servico.chave} ao orçamento</button>`;
+        resultadoEl.appendChild(area);
+    }
+
+    window.adicionarServicoGenericoAoOrcamento = function (chave) {
+        const servico = POR_CHAVE[chave];
+        if (!servico) return;
+        const resultado = obterResultadoAtual(servico);
+        if (!resultado || resultado.custoTotal < 0) {
+            alert(`Calcule ${servico.chave} primeiro.`);
+            return;
+        }
+        window.ultimoResultadoServicoOrcamento = resultado;
+        orcamentoServicoPendente = {
+            servico: servico.chave,
+            descricao: servico.chave,
+            valor_materiais: resultado.custoMateriais,
+            valor_mao_obra: resultado.custoMaoObra,
+            valor_total: resultado.custoTotal,
+            dados_calculo: resultado
+        };
+
+        if (orcamentoDestinoDiretoId) {
+            const destino = orcamentoDestinoDiretoId;
+            salvarServicoPendenteNoOrcamento(destino);
+            return;
+        }
+
+        abrirOrcamentos();
+        const painel = document.getElementById("painelAdicionarServicoOrcamento");
+        const texto = document.getElementById("servicoPendenteOrcamento");
+        if (painel) painel.style.display = "block";
+        if (texto) texto.textContent = `${servico.chave} calculado: ${dinheiro(resultado.custoTotal)} (materiais + mão de obra).`;
+        carregarOrcamentosParaAdicionarServico();
+    };
+
+    window.selecionarServicoGenericoParaOrcamento = function (chave) {
+        const servico = POR_CHAVE[chave];
+        const menu = document.getElementById("menuAdicionarServico");
+        if (menu) menu.style.display = "none";
+        if (!servico) return;
+        if (!orcamentoDetalheAtualId) {
+            alert("Selecione primeiro um orçamento.");
+            return;
+        }
+        if (typeof window[servico.abrir] !== "function") {
+            alert(`A tela de ${servico.chave} não está disponível.`);
+            return;
+        }
+        orcamentoDestinoDiretoId = orcamentoDetalheAtualId;
+        window[servico.abrir]();
+        setTimeout(function () {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 100);
+    };
+
+    function configurarMenu() {
+        const menu = document.getElementById("menuAdicionarServico");
+        if (!menu) return;
+        menu.innerHTML = SERVICOS_ORCAMENTO.map(servico =>
+            `<button type="button" onclick="selecionarServicoGenericoParaOrcamento('${servico.chave.replace(/'/g, "\\'")}')">${servico.icone} ${servico.chave}</button>`
+        ).join("");
+    }
+
+    function configurarBotoes() {
+        SERVICOS_ORCAMENTO.forEach(adicionarBotaoResultado);
+    }
+
+    function envolverCalculadoras() {
+        SERVICOS_ORCAMENTO.forEach(servico => {
+            const original = window[servico.abrir ? "calcular" + servico.chave.replace(/[^A-Za-zÀ-ÿ0-9]+(.)/g, (_, c) => c ? c.toUpperCase() : "") : ""];
+        });
+
+        const calculadoras = {
+            "Alvenaria": "calcularAlvenaria",
+            "Chapisco": "calcularChapisco",
+            "Emboço": "calcularEmboco",
+            "Contrapiso": "calcularContrapiso",
+            "Piso / Cerâmica": "calcularPiso",
+            "Concreto": "calcularConcreto",
+            "Sapata": "calcularSapata",
+            "Viga Baldrame": "calcularVigaBaldrame",
+            "Bloco de Fundação": "calcularBlocoFundacao",
+            "Pintura": "calcularPintura",
+            "Hidráulica — Água Fria": "calcularHidraulica",
+            "Esgoto Sanitário": "calcularEsgoto",
+            "Ralos e Caixas Sifonadas": "calcularRalosCaixas",
+            "Caixa d'água / Reservatório": "calcularCaixaAgua",
+            "Aparelhos Hidráulicos": "calcularAparelhosHidraulicos",
+            "Telhado": "calcularTelhado",
+            "Calhas e Rufos": "calcularCalhasRufos",
+            "Forro": "calcularForro",
+            "Impermeabilização": "calcularImpermeabilizacao",
+            "Elétrica — Pontos": "calcularEletricaPontos",
+            "Elétrica — Eletrodutos e Cabos": "calcularEletricaCabos",
+            "Quadro de Distribuição": "calcularEletricaQuadro",
+            "Disjuntores e Proteções": "calcularEletricaProtecoes",
+            "Aterramento": "calcularEletricaAterramento",
+            "Entrada de Energia": "calcularEletricaEntradaEnergia"
+        };
+
+        Object.entries(calculadoras).forEach(([chave, nomeFuncao]) => {
+            const servico = POR_CHAVE[chave];
+            const original = window[nomeFuncao];
+            if (typeof original !== "function" || !servico || original.__integradoOrcamento) return;
+            const envolvida = function () {
+                const retorno = original.apply(this, arguments);
+                setTimeout(function () { definirUltimoResultado(servico); }, 0);
+                return retorno;
+            };
+            envolvida.__integradoOrcamento = true;
+            window[nomeFuncao] = envolvida;
+        });
+    }
+
+    // As duas primeiras já possuem integração específica e testada.
+    // Para os demais, esta camada usa exatamente os valores de materiais,
+    // mão de obra e total exibidos pela calculadora existente.
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () {
+            configurarMenu();
+            configurarBotoes();
+            envolverCalculadoras();
+        });
+    } else {
+        configurarMenu();
+        configurarBotoes();
+        envolverCalculadoras();
+    }
+})();
