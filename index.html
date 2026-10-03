@@ -36,11 +36,11 @@
 #authTela{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(135deg,#062d70 0%,#0874dc 58%,#004b9b 100%);box-sizing:border-box}
 .apr-auth-card{width:min(440px,100%);background:#fff;border-radius:18px;padding:26px 24px;box-shadow:0 12px 35px rgba(0,0,0,.25);box-sizing:border-box}
 .apr-auth-marca{height:86px;width:150px;margin:0 auto 12px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #dce5ef}.apr-auth-marca img{width:100%;height:100%;object-fit:contain;padding:4px}
-.apr-auth-card h1{text-align:center;margin:8px 0 4px;color:#1565c0;font-size:28px}.apr-auth-subtitulo{text-align:center;color:#526273;margin:0 0 18px;font-size:15px}
+.apr-auth-banner-calculadora{width:250px;max-width:100%;height:auto;margin:0 auto 14px;background:#fff;border:0;border-radius:0;overflow:visible}.apr-auth-banner-calculadora img{display:block;width:100%;height:auto;object-fit:contain;padding:0;border-radius:10px}.apr-auth-card h1{text-align:center;margin:8px 0 4px;color:#1565c0;font-size:28px}.apr-auth-subtitulo{text-align:center;color:#526273;margin:0 0 18px;font-size:15px}
 .apr-auth-form h2{margin:4px 0 16px;color:#1b3553;font-size:22px}.apr-auth-form label{display:block;margin:10px 0 5px;font-weight:700;color:#33485f}.apr-auth-form input{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #c8d4e1;border-radius:9px;font-size:16px;background:#fff}.apr-auth-form input:focus{outline:none;border-color:#1565c0;box-shadow:0 0 0 3px rgba(21,101,192,.12)}
 .apr-auth-btn{width:100%;margin-top:18px;border:0;border-radius:9px;padding:13px 15px;background:#1565c0;color:#fff;font-weight:800;font-size:17px;cursor:pointer}.apr-auth-btn:hover{background:#0d57a8}.apr-auth-link{width:100%;border:0;background:transparent;color:#1565c0;font-weight:700;padding:11px 8px;cursor:pointer;font-size:15px}.apr-auth-link-secundario{font-weight:600;color:#526273;padding-top:4px}.apr-auth-mensagem{min-height:24px;margin-top:10px;text-align:center;font-weight:700;font-size:14px;color:#1565c0}.apr-auth-mensagem.erro{color:#b42318}
 .apr-conta-bar{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:7px 14px;background:#0b3f83;color:#fff;font:600 13px Arial,sans-serif}.apr-conta-bar span{opacity:.95}.apr-conta-sair{border:1px solid rgba(255,255,255,.55);background:transparent;color:#fff;border-radius:7px;padding:6px 10px;font-weight:800;cursor:pointer}.apr-conta-sair:hover{background:rgba(255,255,255,.12)}
-@media(max-width:600px){.apr-auth-card{padding:22px 18px}.apr-auth-card h1{font-size:24px}.apr-conta-bar{justify-content:space-between;gap:8px;flex-wrap:wrap}}
+@media(max-width:600px){.apr-auth-card{padding:22px 18px}.apr-auth-card h1{font-size:24px}.apr-auth-banner-calculadora{width:210px;margin-bottom:12px}.apr-conta-bar{justify-content:space-between;gap:8px;flex-wrap:wrap}}
 </style>
 
 
@@ -95,6 +95,10 @@
 @media(max-width:700px){.apr-orcamento-itens-cabecalho{flex-direction:column}.apr-orcamento-servico-menu-wrap{width:100%}.apr-orcamento-servico-menu{left:0;right:auto;width:100%}}
 </style>
 
+<style id="apr-oferta-discreta-style">
+.apr-oferta-discreta a:hover{text-decoration:underline;opacity:1}@media(max-width:600px){}
+</style>
+
 </head>
 
 <body>
@@ -104,8 +108,8 @@
          ===================================================== -->
     <section id="authTela" class="apr-auth-tela" aria-label="Acesso ao APR Cálculo de Obra">
         <div class="apr-auth-card">
-            <div class="apr-auth-marca">
-                <img src="images/apr-gigante-marca.png" alt="APR Gigante">
+            <div class="apr-auth-marca apr-auth-banner-calculadora">
+                <img src="images/banner-calculadora-obra.png" alt="APR Gigante - Calculadora de Obra">
             </div>
             <h1>APR Cálculo de Obra</h1>
             <p class="apr-auth-subtitulo">Entre para salvar clientes, obras e orçamentos.</p>
@@ -149,6 +153,7 @@
         <span id="aprUsuarioLogado">Usuário</span>
         <button type="button" class="apr-conta-sair" onclick="sairDoSistema()">Sair</button>
     </div>
+
 
     <header class="cabecalho apr-header-home">
     <div class="apr-marca">
